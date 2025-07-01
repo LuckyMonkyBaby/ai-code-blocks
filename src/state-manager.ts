@@ -106,6 +106,11 @@ export class StreamingStateManager {
 
       const existing = this.state.currentFiles.get(command.filePath);
 
+      // Skip if content hasn't changed
+      if (existing && existing.content === command.content) {
+        continue;
+      }
+
       const fileState: FileState = {
         filePath: command.filePath,
         content: command.content,
