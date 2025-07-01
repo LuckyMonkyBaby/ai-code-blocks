@@ -1,0 +1,6 @@
+{
+  "name": "@luckymonkybaby/streaming-code-blocks",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}
