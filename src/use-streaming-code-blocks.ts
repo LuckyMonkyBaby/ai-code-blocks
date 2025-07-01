@@ -100,7 +100,7 @@ export function useStreamingCodeBlocks({
 
       return () => clearTimeout(saveTimer);
     }
-  }, [threadId, persistSession, manager, rawMessages]);
+  }, [threadId, persistSession]); // Remove manager and rawMessages
 
   // Clean messages for chat display
   const messages = rawMessages.map((msg) => ({
