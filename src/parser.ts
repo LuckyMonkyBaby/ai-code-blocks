@@ -78,7 +78,9 @@ export class StreamingParser {
         action: "write",
         filePath: match[1],
         content: match[2].trim(),
-        isComplete: match[2].includes(`</${this.config.writeTag}>`),
+        isComplete:
+          match[2].includes(`</${this.config.writeTag}>`) ||
+          content.includes(this.config.endTag),
       });
     }
 

@@ -60,35 +60,39 @@ export function useStreamingCodeBlocks({
 
   // Process messages and track changes
   useEffect(() => {
-    const lastMessage = rawMessages[rawMessages.length - 1];
-    if (lastMessage?.role === "assistant") {
-      const prevFiles = new Map(manager.getState().currentFiles);
+    const processLastMessage = async () => {
+      const lastMessage = rawMessages[rawMessages.length - 1];
+      if (lastMessage?.role === "assistant") {
+        const prevFiles = new Map(manager.getState().currentFiles);
 
-      manager.processMessage(lastMessage.id, lastMessage.content);
+        await manager.processMessage(lastMessage.id, lastMessage.content);
 
-      // Notify file changes
-      if (onFileChanged) {
-        manager.getCurrentFiles().forEach((file) => {
-          const prevFile = prevFiles.get(file.filePath);
-          if (!prevFile || prevFile.version !== file.version) {
-            onFileChanged(file);
-          }
-        });
-      }
-
-      // Notify code block completion
-      if (onCodeBlockComplete) {
-        const state = manager.getState();
-        const currentBlock = state.codeBlocks.find(
-          (block) => block.messageId === lastMessage.id && block.isComplete
-        );
-        if (currentBlock) {
-          onCodeBlockComplete(currentBlock);
+        // Notify file changes
+        if (onFileChanged) {
+          manager.getCurrentFiles().forEach((file) => {
+            const prevFile = prevFiles.get(file.filePath);
+            if (!prevFile || prevFile.version !== file.version) {
+              onFileChanged(file);
+            }
+          });
         }
-      }
 
-      forceUpdate({});
-    }
+        // Notify code block completion
+        if (onCodeBlockComplete) {
+          const state = manager.getState();
+          const currentBlock = state.codeBlocks.find(
+            (block) => block.messageId === lastMessage.id && block.isComplete
+          );
+          if (currentBlock) {
+            onCodeBlockComplete(currentBlock);
+          }
+        }
+
+        forceUpdate({});
+      }
+    };
+
+    processLastMessage();
   }, [rawMessages, manager, onFileChanged, onCodeBlockComplete]);
 
   // Auto-save when state changes
@@ -100,7 +104,7 @@ export function useStreamingCodeBlocks({
 
       return () => clearTimeout(saveTimer);
     }
-  }, [threadId, persistSession]); // Remove manager and rawMessages
+  }, [threadId, persistSession]);
 
   // Clean messages for chat display
   const messages = rawMessages.map((msg) => ({
