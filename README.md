@@ -151,6 +151,290 @@ useStreamingCodeBlocks({
 });
 ```
 
+## Architecture & Performance
+
+This library is built on **Zustand** for reactive state management and optionally integrates with **React Query** for server state caching and optimistic updates.
+
+### Why Zustand?
+- 🚀 **Automatic Updates**: No more manual re-renders - state changes automatically trigger React updates
+- 🔧 **DevTools Support**: Time travel debugging with Redux DevTools
+- ⚡ **Performance**: ~2KB bundle, optimized for React
+- 🧩 **Simple API**: Easy to understand and extend
+
+## React Query Integration
+
+For enhanced performance, caching, and optimistic updates, you can enable React Query integration with a simplified API:
+
+### Basic Setup (Simplified API)
+
+```tsx
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useStreamingCodeBlocks } from "@yourusername/streaming-code-blocks";
+
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ChatInterface />
+    </QueryClientProvider>
+  );
+}
+
+function ChatInterface() {
+  const {
+    currentFiles,
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isCodeMode,
+    // React Query states (automatically available when QueryClientProvider exists)
+    isLoadingSession,
+    isSavingSession,
+    sessionError,
+    refetchSession,
+    invalidateSession,
+  } = useStreamingCodeBlocks({
+    apiEndpoint: "/api/chat",
+    threadId: "user_123",
+    persistSession: true,
+    reactQuery: true, // 🎉 Simple boolean flag - auto-detects QueryClientProvider!
+  });
+
+  if (sessionError) {
+    return <div>Error loading session: {sessionError.message}</div>;
+  }
+
+  return (
+    <div>
+      {isLoadingSession && <div>Loading session...</div>}
+      {isSavingSession && <div>Saving...</div>}
+      
+      {/* Your chat UI here */}
+    </div>
+  );
+}
+```
+
+### Advanced Configuration
+
+```tsx
+function ChatInterface() {
+  const {
+    currentFiles,
+    // ... other props
+  } = useStreamingCodeBlocks({
+    apiEndpoint: "/api/chat",
+    threadId: "user_123", 
+    persistSession: true,
+    reactQuery: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes  
+      retry: 3,
+    },
+  });
+
+  return <div>{/* Your UI */}</div>;
+}
+```
+
+### Advanced Usage with Custom Storage
+
+```tsx
+import { 
+  useStreamingCodeBlocks,
+  ReactQueryStorageAdapter,
+  MemoryStorageAdapter 
+} from "@yourusername/streaming-code-blocks";
+
+class DatabaseAdapter implements StorageAdapter {
+  async saveSession(sessionId: string, data: any) {
+    await fetch(`/api/sessions/${sessionId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+  
+  async loadSession(sessionId: string) {
+    const response = await fetch(`/api/sessions/${sessionId}`);
+    return response.ok ? response.json() : null;
+  }
+  
+  // ... implement other methods
+}
+
+function ChatWithDatabase() {
+  const queryClient = useQueryClient();
+  const baseStorage = new DatabaseAdapter();
+  
+  // Wrap with React Query for caching and optimistic updates
+  const reactQueryStorage = new ReactQueryStorageAdapter(
+    baseStorage,
+    queryClient,
+    {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      retry: 3,
+    }
+  );
+
+  const streamingHook = useStreamingCodeBlocks({
+    apiEndpoint: "/api/chat",
+    storage: reactQueryStorage,
+    threadId: "user_123",
+    persistSession: true,
+  });
+
+  return <div>{/* Your UI */}</div>;
+}
+```
+
+### Convenience Hooks
+
+Use specialized hooks for specific operations:
+
+```tsx
+import {
+  useFileQuery,
+  useSessionMutation,
+  useStreamingQueries,
+} from "@yourusername/streaming-code-blocks";
+
+function FileViewer({ filePath }: { filePath: string }) {
+  const storage = useContext(StorageContext);
+  
+  const {
+    data: file,
+    isLoading,
+    error,
+    refetch,
+  } = useFileQuery(filePath, {
+    storage,
+    enabled: !!filePath,
+    staleTime: 30000,
+  });
+
+  if (isLoading) return <div>Loading file...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!file) return <div>File not found</div>;
+
+  return (
+    <div>
+      <button onClick={() => refetch()}>Refresh</button>
+      <pre>{file.content}</pre>
+    </div>
+  );
+}
+
+function SessionManager({ sessionId }: { sessionId: string }) {
+  const storage = useContext(StorageContext);
+  const { invalidateSession, invalidateAllFiles } = useStreamingQueries();
+  
+  const saveSessionMutation = useSessionMutation({
+    storage,
+    onSuccess: () => {
+      console.log('Session saved successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to save session:', error);
+    },
+  });
+
+  const handleSave = (sessionData: any) => {
+    saveSessionMutation.mutate({ sessionId, sessionData });
+  };
+
+  const handleRefresh = () => {
+    invalidateSession(sessionId);
+    invalidateAllFiles();
+  };
+
+  return (
+    <div>
+      <button 
+        onClick={() => handleSave(/* session data */)}
+        disabled={saveSessionMutation.isPending}
+      >
+        {saveSessionMutation.isPending ? 'Saving...' : 'Save Session'}
+      </button>
+      <button onClick={handleRefresh}>Refresh Data</button>
+    </div>
+  );
+}
+```
+
+### Benefits of React Query Integration
+
+- **Intelligent Caching**: Reduce unnecessary API calls with automatic caching
+- **Optimistic Updates**: UI updates immediately, reverting on errors
+- **Background Refetching**: Keep data fresh automatically
+- **Error Handling**: Built-in retry logic and error states
+- **Loading States**: Track loading/saving states across your app
+- **Offline Support**: Automatic retry when connection returns
+- **Request Deduplication**: Multiple identical requests are automatically merged
+
+## Advanced: Direct Zustand Store Usage
+
+For maximum flexibility, you can use the underlying Zustand store directly:
+
+```tsx
+import { createStreamingStore } from "@yourusername/streaming-code-blocks";
+
+// Create your own store instance
+const streamingStore = createStreamingStore();
+
+function useCustomStreamingLogic() {
+  // Initialize the store
+  useEffect(() => {
+    streamingStore.getState().initialize(config, storage, threadId);
+  }, []);
+
+  // Subscribe to specific state slices
+  const files = streamingStore((state) => state.currentFiles);
+  const isCodeMode = streamingStore((state) => state.isCodeMode);
+  
+  // Use store actions directly
+  const processMessage = streamingStore((state) => state.processMessage);
+  const clearAll = streamingStore((state) => state.clear);
+
+  return { files, isCodeMode, processMessage, clearAll };
+}
+```
+
+### Store Actions & State
+
+```typescript
+interface StreamingStore {
+  // State
+  codeBlocks: CodeBlock[]
+  currentFiles: Map<string, FileState>
+  isCodeMode: boolean
+  
+  // Actions  
+  initialize: (config, storage, threadId) => void
+  processMessage: (messageId, content) => Promise<void>
+  updateFile: (filePath, updates) => void
+  addFile: (file) => void
+  removeFile: (filePath) => void
+  clear: () => void
+  
+  // Session Management
+  loadFromStorage: (sessionId) => Promise<void>
+  saveToStorage: (sessionId) => Promise<void>
+}
+```
+
+### Migration Guide
+
+**v1.x users**: Your existing code continues to work unchanged! The new Zustand integration runs automatically under the hood.
+
+To enable React Query's enhanced features:
+
+1. Install `@tanstack/react-query` (if not already installed)
+2. Wrap your app with `QueryClientProvider`  
+3. Add `reactQuery: true` to your hook options
+4. Enjoy automatic caching, optimistic updates, and enhanced loading states!
+
 ## Callbacks
 
 ```tsx

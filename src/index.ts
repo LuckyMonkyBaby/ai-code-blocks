@@ -2,8 +2,28 @@
 export { useStreamingCodeBlocks } from "./use-streaming-code-blocks";
 export { StreamingParser } from "./parser";
 export { StreamingStateManager } from "./state-manager";
-export { MemoryStorageAdapter } from "./storage";
-export type { StorageAdapter } from "./storage";
+export { MemoryStorageAdapter, ReactQueryStorageAdapter } from "./storage";
+export type { StorageAdapter, ReactQueryStorageOptions } from "./storage";
+
+// Zustand store
+export { createStreamingStore, useStreamingStore } from "./store";
+export type { StreamingStore } from "./store";
+
+// React Query hooks
+export {
+  useFileQuery,
+  useSessionMutation,
+  useFileMutation,
+  useSessionQuery,
+  usePrefetchFile,
+  useStreamingQueries,
+} from "./react-query-hooks";
+export type {
+  UseFileQueryOptions,
+  UseSessionMutationOptions,
+  UseFileMutationOptions,
+  UseSessionQueryOptions,
+} from "./react-query-hooks";
 import { Config } from "./types";
 
 export type {

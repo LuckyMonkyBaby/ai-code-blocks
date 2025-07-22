@@ -57,6 +57,22 @@ export class StreamingStateManager {
     });
   }
 
+  // React Query-aware async methods
+  async loadSessionAsync(sessionId: string): Promise<void> {
+    return this.loadFromStorage(sessionId);
+  }
+
+  async saveSessionAsync(sessionId: string): Promise<void> {
+    return this.saveToStorage(sessionId);
+  }
+
+  async getSessionDataAsync(): Promise<any> {
+    return {
+      ...this.state,
+      currentFiles: Object.fromEntries(this.state.currentFiles),
+    };
+  }
+
   getCleanedMessage(content: string): string {
     const parsed = this.parser.parseMessage(content);
     
