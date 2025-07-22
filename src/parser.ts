@@ -51,7 +51,7 @@ export class StreamingParser {
     ];
 
     return {
-      messageId,
+      messageId: messageId as `msg-${string}`,
       thinking,
       commands,
       isComplete: codeContent.includes(this.config.endTag),

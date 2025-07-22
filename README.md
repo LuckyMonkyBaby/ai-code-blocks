@@ -1,496 +1,393 @@
-# Streaming Code Blocks
+# Streaming Code Blocks v2.0
 
-TypeScript library for parsing streaming code blocks from AI chat responses, similar to Claude's artifacts system.
+TypeScript library for parsing streaming code blocks from AI chat responses, with automatic file generation and clean message display. Perfect for building AI coding assistants similar to Claude's artifacts system.
 
-## Installation
+## ✨ What's New in v2.0
+
+- 🚀 **Always-on React Query**: Built-in caching and session persistence
+- ⚡ **Zustand State Management**: Efficient reactive updates
+- 🎯 **Simplified API**: Consistent naming and cleaner interfaces
+- 📦 **Minimal Bundle**: Only Zustand as direct dependency (~2.9kb gzipped)
+- 🔒 **Strict TypeScript**: Compile-time validation with template literal types
+- 🧹 **Clean Architecture**: No backwards compatibility, fresh start
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
-npm install @yourusername/streaming-code-blocks
+# Install the library
+npm install @luckymonkybaby/streaming-code-blocks
+
+# Install peer dependencies (required)
+npm install @tanstack/react-query @ai-sdk/react
 ```
 
-## Quick Start
+### Basic Usage
 
 ```tsx
-import { useStreamingCodeBlocks } from "@yourusername/streaming-code-blocks";
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useStreamingCodeBlocks } from '@luckymonkybaby/streaming-code-blocks';
 
-export function App() {
-  const {
-    currentFiles,
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isCodeMode,
-  } = useStreamingCodeBlocks({
-    apiEndpoint: "/api/chat",
-  });
-
-  return (
-    <div>
-      {/* Chat UI */}
-      {messages.map((msg) => (
-        <div key={msg.id}>{msg.content}</div>
-      ))}
-
-      {/* Files */}
-      {currentFiles.map((file) => (
-        <div key={file.filePath}>
-          <h3>
-            {file.filePath} (v{file.version})
-          </h3>
-          <pre>{file.content}</pre>
-        </div>
-      ))}
-
-      <form onSubmit={handleSubmit}>
-        <input value={input} onChange={handleInputChange} />
-        <button type="submit">Send</button>
-      </form>
-    </div>
-  );
-}
-```
-
-## Features
-
-- ✅ Real-time streaming code block extraction
-- ✅ File versioning with modify support
-- ✅ Pluggable storage adapters
-- ✅ TypeScript + Zod validation
-- ✅ Thread-based sessions
-
-## API Format
-
-Your AI responses should include code blocks:
-
-```
-I'll create a React component for you.
-
-<ablo-code>
-  <ablo-thinking>
-  Creating a simple button component with TypeScript
-  </ablo-thinking>
-
-  <ablo-write file_path="components/Button.tsx">
-  interface ButtonProps {
-    children: React.ReactNode;
-    onClick: () => void;
-  }
-
-  export function Button({ children, onClick }: ButtonProps) {
-    return <button onClick={onClick}>{children}</button>;
-  }
-  </ablo-write>
-</ablo-code>
-
-The component is ready to use!
-```
-
-**Result:**
-
-- Chat shows: "I'll create a React component for you. The component is ready to use!"
-- Files panel shows: `components/Button.tsx` with the code
-
-## Modify Support
-
-```
-<ablo-modify file_path="components/Button.tsx" changes="Add styling">
-interface ButtonProps {
-  children: React.ReactNode;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary';
-}
-
-export function Button({ children, onClick, variant = 'primary' }: ButtonProps) {
-  const className = variant === 'primary' ? 'btn-primary' : 'btn-secondary';
-  return <button className={className} onClick={onClick}>{children}</button>;
-}
-</ablo-modify>
-```
-
-## Storage Adapters
-
-### Memory (default)
-
-```tsx
-useStreamingCodeBlocks({ apiEndpoint: "/api/chat" });
-```
-
-### Custom Storage
-
-```tsx
-import { StorageAdapter } from "@yourusername/streaming-code-blocks";
-
-class DatabaseAdapter implements StorageAdapter {
-  async saveFile(filePath: string, content: string, metadata: any) {
-    // Save to your database
-  }
-  // ... implement other methods
-}
-
-useStreamingCodeBlocks({
-  apiEndpoint: "/api/chat",
-  storage: new DatabaseAdapter(),
-  threadId: "user_123",
-  persistSession: true,
-});
-```
-
-## Configuration
-
-```tsx
-useStreamingCodeBlocks({
-  apiEndpoint: "/api/chat",
-  config: {
-    startTag: "<code>",
-    endTag: "</code>",
-    thinkingTag: "reasoning",
-    writeTag: "file",
-    modifyTag: "update",
-  },
-});
-```
-
-## Architecture & Performance
-
-This library is built on **Zustand** for reactive state management and optionally integrates with **React Query** for server state caching and optimistic updates.
-
-### Why Zustand?
-- 🚀 **Automatic Updates**: No more manual re-renders - state changes automatically trigger React updates
-- 🔧 **DevTools Support**: Time travel debugging with Redux DevTools
-- ⚡ **Performance**: ~2KB bundle, optimized for React
-- 🧩 **Simple API**: Easy to understand and extend
-
-## React Query Integration
-
-For enhanced performance, caching, and optimistic updates, you can enable React Query integration with a simplified API:
-
-### Basic Setup (Simplified API)
-
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useStreamingCodeBlocks } from "@yourusername/streaming-code-blocks";
-
+// Create QueryClient (required in v2.0)
 const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ChatInterface />
+      <CodeBlocksDemo />
     </QueryClientProvider>
   );
 }
 
-function ChatInterface() {
+function CodeBlocksDemo() {
   const {
-    currentFiles,
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isCodeMode,
-    // React Query states (automatically available when QueryClientProvider exists)
+    files,           // Generated files (was: currentFiles)
+    messages,        // Cleaned chat messages
+    codeBlocks,      // Parsed code blocks
+    isStreaming,     // Streaming status (was: isCodeMode)
+    
+    // React Query states (always available in v2.0)
     isLoadingSession,
-    isSavingSession,
+    isSavingSession, 
     sessionError,
     refetchSession,
-    invalidateSession,
   } = useStreamingCodeBlocks({
-    apiEndpoint: "/api/chat",
-    threadId: "user_123",
+    endpoint: '/api/chat',        // API endpoint (was: apiEndpoint)
+    sessionId: 'my-session',      // Session ID (was: threadId)
     persistSession: true,
-    reactQuery: true, // 🎉 Simple boolean flag - auto-detects QueryClientProvider!
+    onFileChanged: (file) => {
+      console.log(`📝 File updated: ${file.filePath} v${file.version}`);
+    },
+    onCodeBlockComplete: (block) => {
+      console.log(`✅ Code block finished with ${block.commands.length} files`);
+    }
   });
-
-  if (sessionError) {
-    return <div>Error loading session: {sessionError.message}</div>;
-  }
 
   return (
     <div>
+      {/* Session Status */}
       {isLoadingSession && <div>Loading session...</div>}
       {isSavingSession && <div>Saving...</div>}
+      {sessionError && <div>Error: {sessionError.message}</div>}
       
-      {/* Your chat UI here */}
+      {/* Chat Messages (code blocks automatically removed) */}
+      <div>
+        {messages.map(msg => (
+          <div key={msg.id}>
+            <strong>{msg.role}:</strong> {msg.content}
+          </div>
+        ))}
+      </div>
+
+      {/* Generated Files */}
+      <div>
+        <h2>Generated Files ({files.length})</h2>
+        {files.map(file => (
+          <div key={file.filePath}>
+            <h3>{file.filePath} (v{file.version})</h3>
+            <pre><code>{file.content}</code></pre>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+export default App;
 ```
 
-### Advanced Configuration
+## 🤖 AI Response Format
 
-```tsx
-function ChatInterface() {
-  const {
-    currentFiles,
-    // ... other props
-  } = useStreamingCodeBlocks({
-    apiEndpoint: "/api/chat",
-    threadId: "user_123", 
-    persistSession: true,
-    reactQuery: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes  
-      retry: 3,
-    },
-  });
+Your AI assistant should return responses with code blocks wrapped in these tags:
 
-  return <div>{/* Your UI */}</div>;
-}
 ```
+I'll help you create a React button component.
 
-### Advanced Usage with Custom Storage
+<ablo-code>
+<ablo-thinking>
+I need to create a reusable button component with proper TypeScript interfaces.
+</ablo-thinking>
 
-```tsx
-import { 
-  useStreamingCodeBlocks,
-  ReactQueryStorageAdapter,
-  MemoryStorageAdapter 
-} from "@yourusername/streaming-code-blocks";
+<ablo-write file_path="components/Button.tsx">
+import React from 'react';
 
-class DatabaseAdapter implements StorageAdapter {
-  async saveSession(sessionId: string, data: any) {
-    await fetch(`/api/sessions/${sessionId}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
-  
-  async loadSession(sessionId: string) {
-    const response = await fetch(`/api/sessions/${sessionId}`);
-    return response.ok ? response.json() : null;
-  }
-  
-  // ... implement other methods
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
 }
 
-function ChatWithDatabase() {
-  const queryClient = useQueryClient();
-  const baseStorage = new DatabaseAdapter();
-  
-  // Wrap with React Query for caching and optimistic updates
-  const reactQueryStorage = new ReactQueryStorageAdapter(
-    baseStorage,
-    queryClient,
-    {
-      staleTime: 2 * 60 * 1000, // 2 minutes
-      retry: 3,
-    }
-  );
-
-  const streamingHook = useStreamingCodeBlocks({
-    apiEndpoint: "/api/chat",
-    storage: reactQueryStorage,
-    threadId: "user_123",
-    persistSession: true,
-  });
-
-  return <div>{/* Your UI */}</div>;
-}
-```
-
-### Convenience Hooks
-
-Use specialized hooks for specific operations:
-
-```tsx
-import {
-  useFileQuery,
-  useSessionMutation,
-  useStreamingQueries,
-} from "@yourusername/streaming-code-blocks";
-
-function FileViewer({ filePath }: { filePath: string }) {
-  const storage = useContext(StorageContext);
-  
-  const {
-    data: file,
-    isLoading,
-    error,
-    refetch,
-  } = useFileQuery(filePath, {
-    storage,
-    enabled: !!filePath,
-    staleTime: 30000,
-  });
-
-  if (isLoading) return <div>Loading file...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-  if (!file) return <div>File not found</div>;
-
+export const Button: React.FC<ButtonProps> = ({ 
+  children, 
+  onClick, 
+  variant = 'primary' 
+}) => {
   return (
-    <div>
-      <button onClick={() => refetch()}>Refresh</button>
-      <pre>{file.content}</pre>
-    </div>
+    <button 
+      className={`btn btn-${variant}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   );
+};
+</ablo-write>
+</ablo-code>
+
+The button component is ready to use!
+```
+
+**Result:**
+- **Chat displays**: "I'll help you create a React button component. The button component is ready to use!"
+- **Files array contains**: `components/Button.tsx` with the component code
+- **Callbacks fire**: `onFileChanged` and `onCodeBlockComplete`
+
+## 🔄 File Modifications
+
+Use `<ablo-modify>` to update existing files:
+
+```
+<ablo-modify file_path="components/Button.tsx" changes="Add loading state">
+import React from 'react';
+
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
+  loading?: boolean;
 }
 
-function SessionManager({ sessionId }: { sessionId: string }) {
-  const storage = useContext(StorageContext);
-  const { invalidateSession, invalidateAllFiles } = useStreamingQueries();
-  
-  const saveSessionMutation = useSessionMutation({
-    storage,
-    onSuccess: () => {
-      console.log('Session saved successfully');
-    },
-    onError: (error) => {
-      console.error('Failed to save session:', error);
-    },
-  });
-
-  const handleSave = (sessionData: any) => {
-    saveSessionMutation.mutate({ sessionId, sessionData });
-  };
-
-  const handleRefresh = () => {
-    invalidateSession(sessionId);
-    invalidateAllFiles();
-  };
-
+export const Button: React.FC<ButtonProps> = ({ 
+  children, 
+  onClick, 
+  variant = 'primary',
+  loading = false 
+}) => {
   return (
-    <div>
-      <button 
-        onClick={() => handleSave(/* session data */)}
-        disabled={saveSessionMutation.isPending}
-      >
-        {saveSessionMutation.isPending ? 'Saving...' : 'Save Session'}
-      </button>
-      <button onClick={handleRefresh}>Refresh Data</button>
-    </div>
+    <button 
+      className={`btn btn-${variant} ${loading ? 'loading' : ''}`}
+      onClick={onClick}
+      disabled={loading}
+    >
+      {loading ? 'Loading...' : children}
+    </button>
   );
-}
+};
+</ablo-modify>
 ```
 
-### Benefits of React Query Integration
+The library automatically increments the file version and triggers `onFileChanged`.
 
-- **Intelligent Caching**: Reduce unnecessary API calls with automatic caching
-- **Optimistic Updates**: UI updates immediately, reverting on errors
-- **Background Refetching**: Keep data fresh automatically
-- **Error Handling**: Built-in retry logic and error states
-- **Loading States**: Track loading/saving states across your app
-- **Offline Support**: Automatic retry when connection returns
-- **Request Deduplication**: Multiple identical requests are automatically merged
+## ⚙️ Configuration
 
-## Advanced: Direct Zustand Store Usage
-
-For maximum flexibility, you can use the underlying Zustand store directly:
-
-```tsx
-import { createStreamingStore } from "@yourusername/streaming-code-blocks";
-
-// Create your own store instance
-const streamingStore = createStreamingStore();
-
-function useCustomStreamingLogic() {
-  // Initialize the store
-  useEffect(() => {
-    streamingStore.getState().initialize(config, storage, threadId);
-  }, []);
-
-  // Subscribe to specific state slices
-  const files = streamingStore((state) => state.currentFiles);
-  const isCodeMode = streamingStore((state) => state.isCodeMode);
-  
-  // Use store actions directly
-  const processMessage = streamingStore((state) => state.processMessage);
-  const clearAll = streamingStore((state) => state.clear);
-
-  return { files, isCodeMode, processMessage, clearAll };
-}
-```
-
-### Store Actions & State
-
-```typescript
-interface StreamingStore {
-  // State
-  codeBlocks: CodeBlock[]
-  currentFiles: Map<string, FileState>
-  isCodeMode: boolean
-  
-  // Actions  
-  initialize: (config, storage, threadId) => void
-  processMessage: (messageId, content) => Promise<void>
-  updateFile: (filePath, updates) => void
-  addFile: (file) => void
-  removeFile: (filePath) => void
-  clear: () => void
-  
-  // Session Management
-  loadFromStorage: (sessionId) => Promise<void>
-  saveToStorage: (sessionId) => Promise<void>
-}
-```
-
-### Migration Guide
-
-**v1.x users**: Your existing code continues to work unchanged! The new Zustand integration runs automatically under the hood.
-
-To enable React Query's enhanced features:
-
-1. Install `@tanstack/react-query` (if not already installed)
-2. Wrap your app with `QueryClientProvider`  
-3. Add `reactQuery: true` to your hook options
-4. Enjoy automatic caching, optimistic updates, and enhanced loading states!
-
-## Callbacks
+### Custom Tags
 
 ```tsx
 useStreamingCodeBlocks({
-  apiEndpoint: "/api/chat",
-  onFileChanged: (file) => {
-    console.log(`File updated: ${file.filePath} v${file.version}`);
-    // Auto-save to external system
-  },
-  onCodeBlockComplete: (codeBlock) => {
-    console.log(`Generated ${codeBlock.commands.length} files`);
-  },
+  endpoint: '/api/chat',
+  config: {
+    startTag: '<code>',
+    endTag: '</code>',
+    thinkingTag: 'reasoning',
+    writeTag: 'create',
+    modifyTag: 'update',
+  }
 });
 ```
 
-## API Reference
+### Custom Storage
 
-### useStreamingCodeBlocks
+```tsx
+import { StorageAdapter } from '@luckymonkybaby/streaming-code-blocks';
 
-Returns:
+class DatabaseAdapter implements StorageAdapter {
+  async saveSession(sessionId: string, data: any): Promise<void> {
+    await fetch(`/api/sessions/${sessionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
 
-- `currentFiles: FileState[]` - Latest version of each file
-- `codeBlocks: CodeBlock[]` - All code block sessions
-- `isCodeMode: boolean` - Currently streaming code
-- `messages` - Chat messages with code blocks removed
-- `input, handleInputChange, handleSubmit` - Chat form controls
-- `totalFiles: number` - Total file count
-- `getFile(path): FileState` - Get specific file
-- `clearAll()` - Clear all data
+  async loadSession(sessionId: string): Promise<any | null> {
+    const response = await fetch(`/api/sessions/${sessionId}`);
+    return response.ok ? response.json() : null;
+  }
 
-### FileState
+  async saveFile(filePath: string, content: string, metadata: any): Promise<void> {
+    await fetch(`/api/files/${encodeURIComponent(filePath)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, metadata })
+    });
+  }
+
+  async loadFile(filePath: string): Promise<{ content: string; metadata: any } | null> {
+    const response = await fetch(`/api/files/${encodeURIComponent(filePath)}`);
+    return response.ok ? response.json() : null;
+  }
+
+  async deleteFile(filePath: string): Promise<void> {
+    await fetch(`/api/files/${encodeURIComponent(filePath)}`, { method: 'DELETE' });
+  }
+}
+
+// Use custom storage
+useStreamingCodeBlocks({
+  endpoint: '/api/chat',
+  storage: new DatabaseAdapter(),
+  sessionId: 'user-123',
+  persistSession: true
+});
+```
+
+## 📖 Examples
+
+Check out the [`examples/`](./examples/) directory for a complete interactive demo showing all library features.
+
+To run the demo:
+1. Copy `examples/demo.tsx` to your React project
+2. Install dependencies: `npm install @luckymonkybaby/streaming-code-blocks @tanstack/react-query @ai-sdk/react`
+3. Import and use the component
+
+## 🔧 API Reference
+
+### Hook Options
+
+```typescript
+interface UseStreamingCodeBlocksProps {
+  endpoint: string;                    // API endpoint for chat
+  sessionId?: string;                  // Session identifier
+  config?: ConfigInput;                // Custom tag configuration
+  storage?: StorageAdapter;            // Custom storage adapter
+  persistSession?: boolean;            // Enable session persistence
+  onFileChanged?: (file: FileState) => void;
+  onCodeBlockComplete?: (codeBlock: CodeBlock) => void;
+}
+```
+
+### Hook Return Value
+
+```typescript
+interface StreamingCodeBlocksResult {
+  // State (readonly arrays)
+  files: readonly FileState[];        // Generated files
+  codeBlocks: readonly CodeBlock[];   // Parsed code blocks
+  isStreaming: boolean;               // Currently processing code
+  
+  // Chat interface (from @ai-sdk/react)
+  messages: readonly Message[];      // Cleaned messages
+  input: string;
+  handleInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  isLoading: boolean;
+  append: (message: { role: 'user' | 'assistant'; content: string }) => void;
+  reload: () => void;
+  stop: () => void;
+  
+  // Operations
+  getFile: (path: string) => FileState | undefined;
+  clearAll: () => void;
+  
+  // React Query states (always present in v2.0)
+  isLoadingSession: boolean;
+  isSavingSession: boolean;
+  sessionError: Error | null;
+  refetchSession: () => void;
+}
+```
+
+### Data Types
 
 ```typescript
 interface FileState {
-  filePath: string;
-  content: string;
-  version: number;
-  lastModified: Date;
-  sourceMessageId: string;
+  readonly filePath: string;
+  readonly content: string;
+  readonly version: number;
+  readonly lastModified: Date;
+  readonly sourceMessageId: `msg-${string}`;
+}
+
+interface CodeBlock {
+  readonly messageId: `msg-${string}`;
+  readonly thinking: string;
+  readonly commands: readonly FileCommand[];
+  readonly isComplete: boolean;
+}
+
+interface Config {
+  readonly startTag: string;    // Default: '<ablo-code>'
+  readonly endTag: string;      // Default: '</ablo-code>'
+  readonly thinkingTag: string; // Default: 'ablo-thinking'
+  readonly writeTag: string;    // Default: 'ablo-write'
+  readonly modifyTag: string;   // Default: 'ablo-modify'
 }
 ```
 
-### StorageAdapter
+## 🏗️ Architecture
 
-```typescript
-interface StorageAdapter {
-  saveSession(sessionId: string, data: any): Promise<void>;
-  loadSession(sessionId: string): Promise<any | null>;
-  saveFile(filePath: string, content: string, metadata: any): Promise<void>;
-  loadFile(
-    filePath: string
-  ): Promise<{ content: string; metadata: any } | null>;
-  deleteFile(filePath: string): Promise<void>;
-}
-```
+### Built on Modern Stack
+- **[Zustand](https://github.com/pmndrs/zustand)**: Reactive state management (~2.9kb)
+- **[React Query](https://tanstack.com/query)**: Server state caching and persistence
+- **[@ai-sdk/react](https://sdk.vercel.ai/docs)**: Chat interface integration
+- **TypeScript**: Strict type safety with template literal types
 
-## License
+### Key Benefits
+- ⚡ **Automatic Updates**: No manual re-renders needed
+- 🔄 **Smart Caching**: React Query handles all server state
+- 🎯 **Type Safety**: Compile-time validation prevents runtime errors
+- 📦 **Minimal Bundle**: Only essential dependencies
+- 🛠️ **DevTools**: Built-in debugging with Redux DevTools
+- 🔌 **Extensible**: Custom storage adapters and configurations
 
-MIT
+## 🚀 Migration from v1.x
+
+v2.0 is a **clean break release** with no backwards compatibility:
+
+### API Changes
+- `apiEndpoint` → `endpoint`
+- `threadId` → `sessionId`
+- `currentFiles` → `files`
+- `isCodeMode` → `isStreaming`
+- React Query now required (peer dependency)
+- Zod runtime validation removed (TypeScript only)
+
+### Breaking Changes
+- StreamingStateManager class removed
+- ReactQueryStorageAdapter wrapper removed
+- All conditional React Query logic removed
+- Runtime schema validation removed
+
+### Quick Migration
+1. Update package: `npm install @luckymonkybaby/streaming-code-blocks@2`
+2. Install peer dependencies: `npm install @tanstack/react-query @ai-sdk/react`
+3. Wrap app with `QueryClientProvider`
+4. Update hook props to new API
+5. Update property names in your components
+
+## 📦 Bundle Size
+
+v2.0 is optimized for minimal bundle size:
+- **Direct dependency**: Zustand only (~2.9kb gzipped)
+- **Peer dependencies**: React Query and @ai-sdk/react (likely already in your app)
+- **No runtime validation**: Zod removed, TypeScript compile-time only
+- **Tree-shakeable**: Import only what you use
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass: `npm test`
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see [LICENSE](./LICENSE) for details.
+
+---
+
+**Made with ❤️ for the AI coding assistant community**

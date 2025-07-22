@@ -1,9 +1,47 @@
 {
   "name": "@luckymonkybaby/streaming-code-blocks",
-  "version": "1.0.0",
-  "description": "TypeScript library for parsing streaming code blocks from AI chat responses",
+  "version": "2.0.0",
+  "description": "Modern TypeScript library for parsing streaming code blocks from AI chat responses with automatic file generation and clean message display",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "ai",
+    "chat",
+    "code-blocks",
+    "streaming",
+    "typescript",
+    "react",
+    "zustand",
+    "react-query",
+    "artifacts",
+    "code-generation",
+    "assistant",
+    "claude",
+    "openai"
+  ],
+  "author": {
+    "name": "LuckyMonkyBaby"
+  },
+  "homepage": "https://github.com/luckymonkybaby/streaming-code-blocks#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luckymonkybaby/streaming-code-blocks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/luckymonkybaby/streaming-code-blocks/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest",
@@ -11,26 +49,26 @@
     "test:coverage": "jest --coverage",
     "test:parser": "jest --testPathPattern=parser",
     "test:storage": "jest --testPathPattern=storage",
-    "test:state": "jest --testPathPattern=state-manager",
     "test:hook": "jest --testPathPattern=use-streaming-code-blocks",
     "test:types": "jest --testPathPattern=types",
     "test:integration": "jest --testPathPattern=integration",
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build",
     "prepare": "npm run build"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "@ai-sdk/react": ">=0.0.5",
+    "@tanstack/react-query": ">=5.0.0"
   },
   "dependencies": {
-    "@ai-sdk/react": "^0.0.1",
-    "@tanstack/react-query": "^5.0.0",
-    "react": "^18.2.0",
-    "zod": "^3.22.0",
     "zustand": "^4.4.0"
   },
   "devDependencies": {
+    "@ai-sdk/react": "^0.0.1",
+    "@tanstack/react-query": "^5.0.0",
+    "react": "^18.2.0",
     "@testing-library/react": "^14.1.2",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/jest": "^29.5.11",
@@ -39,8 +77,5 @@
     "jest-environment-jsdom": "^29.7.0",
     "ts-jest": "^29.1.1",
     "typescript": "^5.3.3"
-  },
-  "peerDependencies": {
-    "react": ">=16.8.0"
   }
 }

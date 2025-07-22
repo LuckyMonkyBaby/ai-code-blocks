@@ -1,0 +1,36 @@
+# Source files
+src/
+tsconfig.json
+jest.config.js
+
+# Development files
+.git/
+.gitignore
+node_modules/
+*.log
+*.lock
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage/
+
+# Development configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keep these in the published package:
+# dist/ (built files)
+# examples/ (usage examples)
+# README.md (documentation)
+# LICENSE (license file)
+# package.json (package metadata)

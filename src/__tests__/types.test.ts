@@ -1,31 +1,18 @@
-// src/__tests__/types.test.ts
+// src/__tests__/types.test.ts - v2.0 with TypeScript-only validation
 import {
-  ConfigSchema,
-  FileCommandSchema,
-  CodeBlockSchema,
-  ParsedMessageSchema,
-  FileStateSchema,
+  Config,
+  ConfigInput, 
+  FileCommand,
+  CodeBlock,
+  ParsedMessage,
+  FileState,
+  DEFAULT_CONFIG,
 } from '../types';
 
-describe('Type Schemas', () => {
-  describe('ConfigSchema', () => {
-    it('should validate complete config', () => {
-      const config = {
-        startTag: '<code>',
-        endTag: '</code>',
-        thinkingTag: 'thinking',
-        writeTag: 'write',
-        modifyTag: 'modify',
-      };
-
-      const result = ConfigSchema.parse(config);
-      expect(result).toEqual(config);
-    });
-
-    it('should apply defaults for missing fields', () => {
-      const result = ConfigSchema.parse({});
-      
-      expect(result).toEqual({
+describe('Types and Interfaces', () => {
+  describe('DEFAULT_CONFIG', () => {
+    it('should have correct default values', () => {
+      expect(DEFAULT_CONFIG).toEqual({
         startTag: '<ablo-code>',
         endTag: '</ablo-code>',
         thinkingTag: 'ablo-thinking',
@@ -34,75 +21,46 @@ describe('Type Schemas', () => {
       });
     });
 
-    it('should validate partial config', () => {
-      const config = {
-        startTag: '<custom>',
-        endTag: '</custom>',
-      };
-
-      const result = ConfigSchema.parse(config);
-      expect(result.startTag).toBe('<custom>');
-      expect(result.endTag).toBe('</custom>');
-      expect(result.thinkingTag).toBe('ablo-thinking');
+    it('should be readonly', () => {
+      // TypeScript will catch this at compile-time
+      expect(typeof DEFAULT_CONFIG.startTag).toBe('string');
+      expect(typeof DEFAULT_CONFIG.endTag).toBe('string');
     });
   });
 
-  describe('FileCommandSchema', () => {
-    it('should validate write command', () => {
-      const command = {
-        action: 'write' as const,
+  describe('Type interfaces', () => {
+    it('should allow valid write command', () => {
+      const command: FileCommand = {
+        action: 'write',
         filePath: 'src/test.js',
         content: 'console.log("test");',
         isComplete: true,
       };
 
-      const result = FileCommandSchema.parse(command);
-      expect(result).toEqual(command);
+      expect(command.action).toBe('write');
+      expect(command.filePath).toBe('src/test.js');
     });
 
-    it('should validate modify command', () => {
-      const command = {
-        action: 'modify' as const,
+    it('should allow valid modify command', () => {
+      const command: FileCommand = {
+        action: 'modify',
         filePath: 'src/test.js',
         changes: 'Add error handling',
         content: 'try { console.log("test"); } catch (e) {}',
         isComplete: false,
       };
 
-      const result = FileCommandSchema.parse(command);
-      expect(result).toEqual(command);
+      expect(command.action).toBe('modify');
+      expect('changes' in command).toBe(true);
     });
 
-    it('should reject invalid action', () => {
-      const command = {
-        action: 'delete',
-        filePath: 'test.js',
-        content: '',
-        isComplete: true,
-      };
-
-      expect(() => FileCommandSchema.parse(command)).toThrow();
-    });
-
-    it('should reject missing required fields', () => {
-      const command = {
-        action: 'write' as const,
-        filePath: 'test.js',
-        // missing content and isComplete
-      };
-
-      expect(() => FileCommandSchema.parse(command)).toThrow();
-    });
-  });
-
-  describe('CodeBlockSchema', () => {
-    it('should validate complete code block', () => {
-      const codeBlock = {
+    it('should allow valid code block', () => {
+      const codeBlock: CodeBlock = {
         messageId: 'msg-123',
         thinking: 'Planning the implementation',
         commands: [
           {
-            action: 'write' as const,
+            action: 'write',
             filePath: 'index.js',
             content: 'const x = 1;',
             isComplete: true,
@@ -111,78 +69,24 @@ describe('Type Schemas', () => {
         isComplete: true,
       };
 
-      const result = CodeBlockSchema.parse(codeBlock);
-      expect(result).toEqual(codeBlock);
+      expect(codeBlock.messageId).toBe('msg-123');
+      expect(codeBlock.commands).toHaveLength(1);
     });
 
-    it('should validate code block with empty commands', () => {
-      const codeBlock = {
-        messageId: 'msg-123',
-        thinking: '',
-        commands: [],
-        isComplete: false,
-      };
-
-      const result = CodeBlockSchema.parse(codeBlock);
-      expect(result).toEqual(codeBlock);
-    });
-
-    it('should validate code block with multiple commands', () => {
-      const codeBlock = {
-        messageId: 'msg-123',
-        thinking: 'Creating multiple files',
-        commands: [
-          {
-            action: 'write' as const,
-            filePath: 'a.js',
-            content: 'a',
-            isComplete: true,
-          },
-          {
-            action: 'modify' as const,
-            filePath: 'b.js',
-            changes: 'Update',
-            content: 'b',
-            isComplete: true,
-          },
-        ],
-        isComplete: true,
-      };
-
-      const result = CodeBlockSchema.parse(codeBlock);
-      expect(result.commands).toHaveLength(2);
-    });
-  });
-
-  describe('ParsedMessageSchema', () => {
-    it('should validate parsed message', () => {
-      const parsed = {
+    it('should allow valid parsed message', () => {
+      const parsed: ParsedMessage = {
         chatContent: 'Hello world',
         codeContent: '<ablo-code>test</ablo-code>',
         hasCodeStarted: true,
         hasCodeEnded: true,
       };
 
-      const result = ParsedMessageSchema.parse(parsed);
-      expect(result).toEqual(parsed);
+      expect(parsed.chatContent).toBe('Hello world');
+      expect(parsed.hasCodeStarted).toBe(true);
     });
 
-    it('should validate empty parsed message', () => {
-      const parsed = {
-        chatContent: '',
-        codeContent: '',
-        hasCodeStarted: false,
-        hasCodeEnded: false,
-      };
-
-      const result = ParsedMessageSchema.parse(parsed);
-      expect(result).toEqual(parsed);
-    });
-  });
-
-  describe('FileStateSchema', () => {
-    it('should validate file state', () => {
-      const fileState = {
+    it('should allow valid file state', () => {
+      const fileState: FileState = {
         filePath: 'src/components/Button.tsx',
         content: 'export const Button = () => null;',
         version: 3,
@@ -190,35 +94,22 @@ describe('Type Schemas', () => {
         sourceMessageId: 'msg-456',
       };
 
-      const result = FileStateSchema.parse(fileState);
-      expect(result).toEqual(fileState);
+      expect(fileState.filePath).toBe('src/components/Button.tsx');
+      expect(fileState.version).toBe(3);
     });
 
-    it('should reject invalid date', () => {
-      const fileState = {
-        filePath: 'test.js',
-        content: 'test',
-        version: 1,
-        lastModified: 'not-a-date',
-        sourceMessageId: 'msg-123',
+    it('should allow partial config input', () => {
+      const configInput: ConfigInput = {
+        startTag: '<custom>',
+        endTag: '</custom>',
       };
 
-      expect(() => FileStateSchema.parse(fileState)).toThrow();
+      expect(configInput.startTag).toBe('<custom>');
     });
 
-    it('should reject negative version', () => {
-      const fileState = {
-        filePath: 'test.js',
-        content: 'test',
-        version: -1,
-        lastModified: new Date(),
-        sourceMessageId: 'msg-123',
-      };
-
-      // Zod will coerce the number, so we need to add custom validation
-      // For now, it will pass - you might want to add .positive() to version in schema
-      const result = FileStateSchema.parse(fileState);
-      expect(result.version).toBe(-1);
+    it('should allow empty config input', () => {
+      const configInput: ConfigInput = {};
+      expect(typeof configInput).toBe('object');
     });
   });
 });

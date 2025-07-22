@@ -1,52 +1,24 @@
-// src/index.ts
+// src/index.ts - v2.0 exports
 export { useStreamingCodeBlocks } from "./use-streaming-code-blocks";
+export type { UseStreamingCodeBlocksProps, StreamingCodeBlocksResult } from "./use-streaming-code-blocks";
+
 export { StreamingParser } from "./parser";
-export { StreamingStateManager } from "./state-manager";
-export { MemoryStorageAdapter, ReactQueryStorageAdapter } from "./storage";
-export type { StorageAdapter, ReactQueryStorageOptions } from "./storage";
+export { MemoryStorageAdapter } from "./storage";
+export type { StorageAdapter } from "./storage";
 
 // Zustand store
-export { createStreamingStore, useStreamingStore } from "./store";
-export type { StreamingStore } from "./store";
-
-// React Query hooks
-export {
-  useFileQuery,
-  useSessionMutation,
-  useFileMutation,
-  useSessionQuery,
-  usePrefetchFile,
-  useStreamingQueries,
-} from "./react-query-hooks";
-export type {
-  UseFileQueryOptions,
-  UseSessionMutationOptions,
-  UseFileMutationOptions,
-  UseSessionQueryOptions,
-} from "./react-query-hooks";
-import { Config } from "./types";
+export { createStreamingStore } from "./store";
+export type { StreamingStore, StreamingStoreApi } from "./store";
 
 export type {
   Config,
+  ConfigInput,
   FileCommand,
   CodeBlock,
   ParsedMessage,
   FileState,
   StreamingState,
+  Message,
 } from "./types";
 
-export {
-  ConfigSchema,
-  FileCommandSchema,
-  CodeBlockSchema,
-  ParsedMessageSchema,
-  FileStateSchema,
-} from "./types";
-
-export const DEFAULT_CONFIG: Config = {
-  startTag: "<ablo-code>",
-  endTag: "</ablo-code>",
-  thinkingTag: "ablo-thinking",
-  writeTag: "ablo-write",
-  modifyTag: "ablo-modify",
-};
+export { DEFAULT_CONFIG } from "./types";

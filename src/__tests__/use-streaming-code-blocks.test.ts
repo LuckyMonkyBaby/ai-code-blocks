@@ -1,5 +1,7 @@
 // src/__tests__/use-streaming-code-blocks.test.tsx
+import React from 'react';
 import { renderHook, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStreamingCodeBlocks } from '../use-streaming-code-blocks';
 import { MemoryStorageAdapter } from '../storage';
 import { FileState, CodeBlock } from '../types';
@@ -22,21 +24,36 @@ import { useChat } from '@ai-sdk/react';
 
 describe('useStreamingCodeBlocks', () => {
   const mockUseChat = useChat as jest.MockedFunction<typeof useChat>;
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   });
 
+  const renderHookWithQueryClient = (callback: () => any) => {
+    return renderHook(callback, {
+      wrapper: ({ children }) => React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      ),
+    });
+  };
+
   it('should initialize with empty state', () => {
-    const { result } = renderHook(() =>
-      useStreamingCodeBlocks({ apiEndpoint: '/api/chat' })
+    const { result } = renderHookWithQueryClient(() =>
+      useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
-    expect(result.current.currentFiles).toEqual([]);
+    expect(result.current.files).toEqual([]);
     expect(result.current.codeBlocks).toEqual([]);
-    expect(result.current.isCodeMode).toBe(false);
-    expect(result.current.totalFiles).toBe(0);
-    expect(result.current.totalCodeBlocks).toBe(0);
+    expect(result.current.isStreaming).toBe(false);
   });
 
   it('should process assistant messages with code blocks', async () => {
@@ -72,8 +89,8 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHook(() =>
-      useStreamingCodeBlocks({ apiEndpoint: '/api/chat' })
+    const { result } = renderHookWithQueryClient(() =>
+      useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
     // Wait for useEffect to process
@@ -81,8 +98,8 @@ Done!`,
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(result.current.currentFiles).toHaveLength(1);
-    expect(result.current.currentFiles[0].filePath).toBe('Button.tsx');
+    expect(result.current.files).toHaveLength(1);
+    expect(result.current.files[0].filePath).toBe('Button.tsx');
     expect(result.current.codeBlocks).toHaveLength(1);
     expect(result.current.messages[0].content).toBe("I'll create a component.\n\nDone!");
   });
@@ -112,15 +129,15 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHook(() =>
-      useStreamingCodeBlocks({ apiEndpoint: '/api/chat' })
+    const { result } = renderHookWithQueryClient(() =>
+      useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(result.current.currentFiles).toHaveLength(0);
+    expect(result.current.files).toHaveLength(0);
     expect(result.current.messages[0].content).toBe(messages[0].content);
   });
 
@@ -144,9 +161,9 @@ Done!`,
       addToolResult: jest.fn(),
     }));
 
-    const { rerender } = renderHook(() =>
+    const { rerender } = renderHookWithQueryClient(() =>
       useStreamingCodeBlocks({
-        apiEndpoint: '/api/chat',
+        endpoint: '/api/chat',
         onFileChanged,
       })
     );
@@ -218,9 +235,9 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    renderHook(() =>
+    renderHookWithQueryClient(() =>
       useStreamingCodeBlocks({
-        apiEndpoint: '/api/chat',
+        endpoint: '/api/chat',
         onCodeBlockComplete,
       })
     );
@@ -265,9 +282,9 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHook(() =>
+    const { result } = renderHookWithQueryClient(() =>
       useStreamingCodeBlocks({
-        apiEndpoint: '/api/chat',
+        endpoint: '/api/chat',
         config: {
           startTag: '<code>',
           endTag: '</code>',
@@ -280,20 +297,20 @@ Done!`,
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(result.current.currentFiles).toHaveLength(1);
-    expect(result.current.currentFiles[0].content).toBe('custom');
+    expect(result.current.files).toHaveLength(1);
+    expect(result.current.files[0].content).toBe('custom');
   });
 
   it('should handle clearAll', () => {
-    const { result } = renderHook(() =>
-      useStreamingCodeBlocks({ apiEndpoint: '/api/chat' })
+    const { result } = renderHookWithQueryClient(() =>
+      useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
     act(() => {
       result.current.clearAll();
     });
 
-    expect(result.current.currentFiles).toEqual([]);
+    expect(result.current.files).toEqual([]);
     expect(result.current.codeBlocks).toEqual([]);
   });
 
@@ -318,8 +335,8 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHook(() =>
-      useStreamingCodeBlocks({ apiEndpoint: '/api/chat' })
+    const { result } = renderHookWithQueryClient(() =>
+      useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
     await act(async () => {
@@ -358,11 +375,11 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    renderHook(() =>
+    renderHookWithQueryClient(() =>
       useStreamingCodeBlocks({
-        apiEndpoint: '/api/chat',
+        endpoint: '/api/chat',
         storage,
-        threadId: 'thread-123',
+        sessionId: 'thread-123',
         persistSession: true,
       })
     );
@@ -378,18 +395,19 @@ Done!`,
     const storage = new MemoryStorageAdapter();
     const sessionData = {
       codeBlocks: [],
-      currentFiles: { 'existing.js': { content: 'existing' } },
-      isCodeMode: false,
+      // Session data structure for v2.0
+      files: { 'existing.js': { content: 'existing' } },
+      isStreaming: false,
     };
     
     await storage.saveSession('thread-123', sessionData);
     const loadSpy = jest.spyOn(storage, 'loadSession');
 
-    renderHook(() =>
+    renderHookWithQueryClient(() =>
       useStreamingCodeBlocks({
-        apiEndpoint: '/api/chat',
+        endpoint: '/api/chat',
         storage,
-        threadId: 'thread-123',
+        sessionId: 'thread-123',
         persistSession: true,
       })
     );
@@ -421,8 +439,8 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHook(() =>
-      useStreamingCodeBlocks({ apiEndpoint: '/api/chat' })
+    const { result } = renderHookWithQueryClient(() =>
+      useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
     expect(result.current.input).toBe('test input');

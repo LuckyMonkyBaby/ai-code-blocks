@@ -1,86 +1,92 @@
-// src/store.ts
+// src/store.ts - v2.0 with all logic consolidated
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { Config, CodeBlock, FileState, StreamingState } from './types';
+import { Config, CodeBlock, FileState, FileCommand, DEFAULT_CONFIG } from './types';
 import { StreamingParser } from './parser';
-import { StorageAdapter, MemoryStorageAdapter } from './storage';
+import { StorageAdapter } from './storage';
 
-export interface StreamingStore extends StreamingState {
+export interface StreamingStore {
+  // State
+  files: ReadonlyMap<string, FileState>;
+  codeBlocks: readonly CodeBlock[];
+  isStreaming: boolean;
+  
   // Configuration and dependencies
+  config: Config;
   parser: StreamingParser | null;
-  storage: StorageAdapter;
-  threadId?: string;
+  storage: StorageAdapter | null;
+  sessionId: string | null;
 
-  // Actions
-  initialize: (config: Config, storage?: StorageAdapter, threadId?: string) => void;
+  // Core actions
+  initialize: (config: Config, storage: StorageAdapter, sessionId?: string) => void;
   processMessage: (messageId: string, content: string) => Promise<void>;
+  clear: () => void;
+  
+  // File operations
   updateFile: (filePath: string, updates: Partial<FileState>) => void;
   addFile: (file: FileState) => void;
   removeFile: (filePath: string) => void;
-  clear: () => void;
+  getFile: (filePath: string) => FileState | undefined;
   
-  // Session management
-  loadFromStorage: (sessionId: string) => Promise<void>;
-  saveToStorage: (sessionId: string) => Promise<void>;
-  getSessionData: () => any;
+  // Session management  
+  loadSession: (sessionId: string) => Promise<void>;
+  saveSession: (sessionId: string) => Promise<void>;
+  getSessionData: () => { files: Record<string, FileState>; codeBlocks: CodeBlock[]; isStreaming: boolean };
   
   // Utility methods
   getCleanedMessage: (content: string) => string;
-  getFile: (filePath: string) => FileState | undefined;
-  getCurrentFiles: () => FileState[];
 }
 
-const createStreamingStore = () =>
+export const createStreamingStore = () =>
   create<StreamingStore>()(
     devtools(
       (set, get) => ({
         // Initial state
+        files: new Map(),
         codeBlocks: [],
-        currentFiles: new Map(),
-        isCodeMode: false,
+        isStreaming: false,
+        config: DEFAULT_CONFIG,
         parser: null,
-        storage: new MemoryStorageAdapter(),
-        threadId: undefined,
+        storage: null,
+        sessionId: null,
 
-        // Actions
-        initialize: (config: Config, storage = new MemoryStorageAdapter(), threadId) => {
+        // Core actions
+        initialize: (config: Config, storage: StorageAdapter, sessionId?: string) => {
           set({
+            config,
             parser: new StreamingParser(config),
             storage,
-            threadId,
+            sessionId: sessionId || null,
+            files: new Map(),
             codeBlocks: [],
-            currentFiles: new Map(),
-            isCodeMode: false,
+            isStreaming: false,
           });
         },
 
         processMessage: async (messageId: string, content: string) => {
-          const { parser, storage, threadId } = get();
+          const { parser, storage, sessionId } = get();
           if (!parser) return;
 
           const parsed = parser.parseMessage(content);
 
           if (parsed.hasCodeStarted) {
-            const codeBlock = parser.parseCodeBlock(parsed.codeContent, messageId);
+            const codeBlock = parser.parseCodeBlock(parsed.codeContent, messageId as `msg-${string}`);
             
             // Update code blocks
-            set((state) => {
-              const existingIndex = state.codeBlocks.findIndex(
-                (block) => block.messageId === codeBlock.messageId
-              );
+            const existingCodeBlocks = get().codeBlocks;
+            const existingIndex = existingCodeBlocks.findIndex(
+              (block) => block.messageId === codeBlock.messageId
+            );
 
-              const newCodeBlocks = [...state.codeBlocks];
-              if (existingIndex >= 0) {
-                newCodeBlocks[existingIndex] = codeBlock;
-              } else {
-                newCodeBlocks.push(codeBlock);
-              }
+            const newCodeBlocks = [...existingCodeBlocks];
+            if (existingIndex >= 0) {
+              newCodeBlocks[existingIndex] = codeBlock;
+            } else {
+              newCodeBlocks.push(codeBlock);
+            }
 
-              return { codeBlocks: newCodeBlocks };
-            });
-
-            // Update files
-            const currentFiles = new Map(get().currentFiles);
+            // Update files from completed commands
+            const currentFiles = new Map(get().files);
             
             for (const command of codeBlock.commands) {
               if (!command.isComplete) continue;
@@ -102,89 +108,105 @@ const createStreamingStore = () =>
 
               currentFiles.set(command.filePath, fileState);
 
-              // Save to storage
-              await storage.saveFile(command.filePath, command.content, {
-                version: fileState.version,
-                sourceMessageId: codeBlock.messageId,
-                threadId,
-              });
+              // Save to storage if available
+              if (storage) {
+                try {
+                  await storage.saveFile(command.filePath, command.content, {
+                    version: fileState.version,
+                    sourceMessageId: codeBlock.messageId,
+                    sessionId,
+                  });
+                } catch (error) {
+                  console.warn('Failed to save file to storage:', error);
+                }
+              }
             }
 
-            set({ 
-              currentFiles,
-              isCodeMode: !parsed.hasCodeEnded 
+            set({
+              codeBlocks: newCodeBlocks,
+              files: currentFiles,
+              isStreaming: !parsed.hasCodeEnded,
             });
           } else {
-            set({ isCodeMode: false });
+            set({ isStreaming: false });
           }
-        },
-
-        updateFile: (filePath: string, updates: Partial<FileState>) => {
-          set((state) => {
-            const currentFiles = new Map(state.currentFiles);
-            const existing = currentFiles.get(filePath);
-            
-            if (existing) {
-              currentFiles.set(filePath, { ...existing, ...updates });
-            }
-            
-            return { currentFiles };
-          });
-        },
-
-        addFile: (file: FileState) => {
-          set((state) => {
-            const currentFiles = new Map(state.currentFiles);
-            currentFiles.set(file.filePath, file);
-            return { currentFiles };
-          });
-        },
-
-        removeFile: (filePath: string) => {
-          set((state) => {
-            const currentFiles = new Map(state.currentFiles);
-            currentFiles.delete(filePath);
-            return { currentFiles };
-          });
         },
 
         clear: () => {
           set({
+            files: new Map(),
             codeBlocks: [],
-            currentFiles: new Map(),
-            isCodeMode: false,
+            isStreaming: false,
           });
         },
 
-        // Session management
-        loadFromStorage: async (sessionId: string) => {
-          const { storage } = get();
-          const data = await storage.loadSession(sessionId);
+        // File operations
+        updateFile: (filePath: string, updates: Partial<FileState>) => {
+          const currentFiles = new Map(get().files);
+          const existing = currentFiles.get(filePath);
           
-          if (data) {
-            set({
-              ...data,
-              currentFiles: new Map(Object.entries(data.currentFiles || {})),
-            });
+          if (existing) {
+            currentFiles.set(filePath, { ...existing, ...updates });
+            set({ files: currentFiles });
           }
         },
 
-        saveToStorage: async (sessionId: string) => {
-          const { storage, codeBlocks, currentFiles, isCodeMode } = get();
-          
-          await storage.saveSession(sessionId, {
-            codeBlocks,
-            currentFiles: Object.fromEntries(currentFiles),
-            isCodeMode,
-          });
+        addFile: (file: FileState) => {
+          const currentFiles = new Map(get().files);
+          currentFiles.set(file.filePath, file);
+          set({ files: currentFiles });
+        },
+
+        removeFile: (filePath: string) => {
+          const currentFiles = new Map(get().files);
+          currentFiles.delete(filePath);
+          set({ files: currentFiles });
+        },
+
+        getFile: (filePath: string) => {
+          return get().files.get(filePath);
+        },
+
+        // Session management
+        loadSession: async (sessionId: string) => {
+          const { storage } = get();
+          if (!storage) return;
+
+          try {
+            const data = await storage.loadSession(sessionId);
+            if (data) {
+              set({
+                files: new Map(Object.entries(data.files || {})),
+                codeBlocks: data.codeBlocks || [],
+                isStreaming: data.isStreaming || false,
+              });
+            }
+          } catch (error) {
+            console.warn('Failed to load session from storage:', error);
+          }
+        },
+
+        saveSession: async (sessionId: string) => {
+          const { storage, files, codeBlocks, isStreaming } = get();
+          if (!storage) return;
+
+          try {
+            await storage.saveSession(sessionId, {
+              files: Object.fromEntries(files),
+              codeBlocks,
+              isStreaming,
+            });
+          } catch (error) {
+            console.warn('Failed to save session to storage:', error);
+          }
         },
 
         getSessionData: () => {
-          const { codeBlocks, currentFiles, isCodeMode } = get();
+          const { files, codeBlocks, isStreaming } = get();
           return {
-            codeBlocks,
-            currentFiles: Object.fromEntries(currentFiles),
-            isCodeMode,
+            files: Object.fromEntries(files),
+            codeBlocks: [...codeBlocks],
+            isStreaming,
           };
         },
 
@@ -203,23 +225,12 @@ const createStreamingStore = () =>
           // Return chat content if it exists, otherwise return original content
           return parsed.chatContent || content;
         },
-
-        getFile: (filePath: string) => {
-          return get().currentFiles.get(filePath);
-        },
-
-        getCurrentFiles: () => {
-          return Array.from(get().currentFiles.values());
-        },
       }),
       {
-        name: 'streaming-code-blocks-store',
+        name: 'streaming-code-blocks-store-v2',
       }
     )
   );
 
-// Export the store creator
-export { createStreamingStore };
-
-// Export a default store instance for convenience
-export const useStreamingStore = createStreamingStore();
+// Export type for external usage
+export type StreamingStoreApi = ReturnType<typeof createStreamingStore>;

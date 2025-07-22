@@ -68,7 +68,7 @@ export function createMockFileState(
     content: '',
     version: 1,
     lastModified: new Date(),
-    sourceMessageId: 'mock-msg',
+    sourceMessageId: 'msg-mock',
     ...partial,
   };
 }

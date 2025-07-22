@@ -1,60 +1,81 @@
-// src/types.ts
-import { z } from "zod";
+// src/types.ts - v2.0 with strict TypeScript (no runtime validation)
 
-export const ConfigSchema = z.object({
-  startTag: z.string().default("<ablo-code>"),
-  endTag: z.string().default("</ablo-code>"),
-  thinkingTag: z.string().default("ablo-thinking"),
-  writeTag: z.string().default("ablo-write"),
-  modifyTag: z.string().default("ablo-modify"),
-});
+// Configuration types
+export interface Config {
+  readonly startTag: string;
+  readonly endTag: string;
+  readonly thinkingTag: string;
+  readonly writeTag: string;
+  readonly modifyTag: string;
+}
 
-export const FileCommandSchema = z.discriminatedUnion("action", [
-  z.object({
-    action: z.literal("write"),
-    filePath: z.string(),
-    content: z.string(),
-    isComplete: z.boolean(),
-  }),
-  z.object({
-    action: z.literal("modify"),
-    filePath: z.string(),
-    changes: z.string(),
-    content: z.string(),
-    isComplete: z.boolean(),
-  }),
-]);
+// Default configuration as const assertion (compile-time)
+export const DEFAULT_CONFIG = {
+  startTag: '<ablo-code>',
+  endTag: '</ablo-code>',
+  thinkingTag: 'ablo-thinking',
+  writeTag: 'ablo-write',
+  modifyTag: 'ablo-modify',
+} as const satisfies Config;
 
-export const CodeBlockSchema = z.object({
-  messageId: z.string(),
-  thinking: z.string(),
-  commands: z.array(FileCommandSchema),
-  isComplete: z.boolean(),
-});
+// File operation types
+export type FileAction = 'write' | 'modify';
 
-export const ParsedMessageSchema = z.object({
-  chatContent: z.string(),
-  codeContent: z.string(),
-  hasCodeStarted: z.boolean(),
-  hasCodeEnded: z.boolean(),
-});
+export interface WriteCommand {
+  readonly action: 'write';
+  readonly filePath: string;
+  readonly content: string;
+  readonly isComplete: boolean;
+}
 
-export const FileStateSchema = z.object({
-  filePath: z.string(),
-  content: z.string(),
-  version: z.number(),
-  lastModified: z.date(),
-  sourceMessageId: z.string(),
-});
+export interface ModifyCommand {
+  readonly action: 'modify';
+  readonly filePath: string;
+  readonly changes: string;
+  readonly content: string;
+  readonly isComplete: boolean;
+}
 
-export type Config = z.infer<typeof ConfigSchema>;
-export type FileCommand = z.infer<typeof FileCommandSchema>;
-export type CodeBlock = z.infer<typeof CodeBlockSchema>;
-export type ParsedMessage = z.infer<typeof ParsedMessageSchema>;
-export type FileState = z.infer<typeof FileStateSchema>;
+export type FileCommand = WriteCommand | ModifyCommand;
 
+// Code block types
+export interface CodeBlock {
+  readonly messageId: `msg-${string}`;
+  readonly thinking: string;
+  readonly commands: readonly FileCommand[];
+  readonly isComplete: boolean;
+}
+
+// Message parsing types
+export interface ParsedMessage {
+  readonly chatContent: string;
+  readonly codeContent: string;
+  readonly hasCodeStarted: boolean;
+  readonly hasCodeEnded: boolean;
+}
+
+// File state types with template literal types for safety
+export interface FileState {
+  readonly filePath: string;
+  readonly content: string;
+  readonly version: number;
+  readonly lastModified: Date;
+  readonly sourceMessageId: `msg-${string}`;
+}
+
+// Store state interface
 export interface StreamingState {
-  codeBlocks: CodeBlock[];
-  currentFiles: Map<string, FileState>;
-  isCodeMode: boolean;
+  readonly files: ReadonlyMap<string, FileState>;
+  readonly codeBlocks: readonly CodeBlock[];
+  readonly isStreaming: boolean;
+}
+
+// Utility type for partial config input
+export type ConfigInput = Partial<Config>;
+
+// Message types for chat interface
+export interface Message {
+  readonly id: string;
+  readonly role: 'user' | 'assistant';
+  readonly content: string;
 }
