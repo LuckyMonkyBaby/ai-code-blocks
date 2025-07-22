@@ -6,14 +6,14 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "examples",
+    "examples", 
     "README.md",
     "LICENSE"
   ],
   "sideEffects": false,
   "keywords": [
     "ai",
-    "chat",
+    "chat", 
     "code-blocks",
     "streaming",
     "typescript",
@@ -27,7 +27,7 @@
     "openai"
   ],
   "author": {
-    "name": "LuckyMonkyBaby (Lukas Andersson)",
+    "name": "LuckyMonkyBaby (Lukas Andersson)", 
     "email": "lukas@ablo.finance",
     "url": "https://ablo.framer.ai/"
   },
@@ -47,7 +47,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "test:watch": "jest --watch",
+    "test:watch": "jest --watch", 
     "test:coverage": "jest --coverage",
     "test:parser": "jest --testPathPattern=parser",
     "test:storage": "jest --testPathPattern=storage",
@@ -55,7 +55,7 @@
     "test:types": "jest --testPathPattern=types",
     "test:integration": "jest --testPathPattern=integration",
     "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit", 
     "prepublishOnly": "npm run typecheck && npm run test && npm run build",
     "prepare": "npm run build"
   },
@@ -64,12 +64,20 @@
     "@ai-sdk/react": ">=0.0.5",
     "@tanstack/react-query": ">=5.0.0"
   },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": false
+    },
+    "@ai-sdk/react": {
+      "optional": false
+    }
+  },
   "dependencies": {
     "zustand": "^4.4.0"
   },
   "devDependencies": {
     "@ai-sdk/react": "^0.0.1",
-    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-query": "^5.0.0", 
     "react": "^18.2.0",
     "@testing-library/react": "^14.1.2",
     "@testing-library/jest-dom": "^6.1.5",

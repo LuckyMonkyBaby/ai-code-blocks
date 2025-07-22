@@ -1,10 +1,30 @@
-// src/use-streaming-code-blocks.ts - v2.0 with handleSubmit options support
+// src/use-streaming-code-blocks.ts - v2.0.2 with better error handling
 import { useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { Config, ConfigInput, FileState, CodeBlock, Message, DEFAULT_CONFIG } from "./types";
 import { StorageAdapter, MemoryStorageAdapter } from "./storage";
 import { createStreamingStore, StreamingStoreApi } from "./store";
+
+// Check if we're in a QueryClientProvider context
+function useQueryClientCheck() {
+  try {
+    return useQueryClient();
+  } catch (error) {
+    throw new Error(
+      'ai-code-blocks: No QueryClient found. Please wrap your app with QueryClientProvider:\n\n' +
+      'import { QueryClient, QueryClientProvider } from "@tanstack/react-query";\n\n' +
+      'const queryClient = new QueryClient();\n\n' +
+      'function App() {\n' +
+      '  return (\n' +
+      '    <QueryClientProvider client={queryClient}>\n' +
+      '      <YourComponents />\n' +
+      '    </QueryClientProvider>\n' +
+      '  );\n' +
+      '}'
+    );
+  }
+}
 
 // v2.0 API with consistent naming
 export interface UseStreamingCodeBlocksProps {
@@ -61,11 +81,11 @@ export function useStreamingCodeBlocks({
   onFileChanged,
   onCodeBlockComplete,
 }: UseStreamingCodeBlocksProps): StreamingCodeBlocksResult {
+  // Check for QueryClient early with helpful error
+  const queryClient = useQueryClientCheck();
+  
   // Create final config by merging with defaults
   const finalConfig: Config = { ...DEFAULT_CONFIG, ...config };
-  
-  // React Query is always available in v2.0 - no conditionals
-  const queryClient = useQueryClient();
   
   // Stable callback references to prevent stale closures
   const onFileChangedRef = useRef(onFileChanged);
