@@ -59,10 +59,14 @@ export class StreamingStateManager {
 
   getCleanedMessage(content: string): string {
     const parsed = this.parser.parseMessage(content);
-    return (
-      parsed.chatContent ||
-      (parsed.hasCodeStarted && !parsed.hasCodeEnded ? "" : content)
-    );
+    
+    // If code has started but not ended, return empty string (incomplete code block)
+    if (parsed.hasCodeStarted && !parsed.hasCodeEnded) {
+      return "";
+    }
+    
+    // Return chat content if it exists, otherwise return original content
+    return parsed.chatContent || content;
   }
 
   getState(): StreamingState {

@@ -104,6 +104,7 @@ export function useStreamingCodeBlocks({
 
       return () => clearTimeout(saveTimer);
     }
+    return undefined;
   }, [threadId, persistSession]);
 
   // Clean messages for chat display

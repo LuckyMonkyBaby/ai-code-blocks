@@ -74,13 +74,16 @@ export class StreamingParser {
 
     let match;
     while ((match = regex.exec(content)) !== null) {
+      // Check if the match ends with the closing tag by looking at the original content
+      const matchStart = match.index || 0;
+      const matchEnd = matchStart + match[0].length;
+      const isComplete = content.substring(matchEnd - `</${this.config.writeTag}>`.length, matchEnd) === `</${this.config.writeTag}>`;
+      
       commands.push({
         action: "write",
         filePath: match[1],
         content: match[2].trim(),
-        isComplete:
-          match[2].includes(`</${this.config.writeTag}>`) ||
-          content.includes(this.config.endTag),
+        isComplete,
       });
     }
 
@@ -96,12 +99,17 @@ export class StreamingParser {
 
     let match;
     while ((match = regex.exec(content)) !== null) {
+      // Check if the match ends with the closing tag by looking at the original content
+      const matchStart = match.index || 0;
+      const matchEnd = matchStart + match[0].length;
+      const isComplete = content.substring(matchEnd - `</${this.config.modifyTag}>`.length, matchEnd) === `</${this.config.modifyTag}>`;
+      
       commands.push({
         action: "modify",
         filePath: match[1],
         changes: match[2] || "",
         content: match[3].trim(),
-        isComplete: match[3].includes(`</${this.config.modifyTag}>`),
+        isComplete,
       });
     }
 
