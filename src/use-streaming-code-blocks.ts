@@ -1,4 +1,4 @@
-// src/use-streaming-code-blocks.ts - v2.0 with clean React Query integration
+// src/use-streaming-code-blocks.ts - v2.0 with handleSubmit options support
 import { useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,13 @@ export interface UseStreamingCodeBlocksProps {
   onCodeBlockComplete?: (codeBlock: CodeBlock) => void;
 }
 
+// UPDATED: Add support for handleSubmit options
+export interface HandleSubmitOptions {
+  body?: any;
+  headers?: Record<string, string>;
+  data?: any;
+}
+
 // v2.0 return interface with consistent naming  
 export interface StreamingCodeBlocksResult {
   // State (readonly arrays)
@@ -24,11 +31,11 @@ export interface StreamingCodeBlocksResult {
   codeBlocks: readonly CodeBlock[];
   isStreaming: boolean;               // was: isCodeMode
   
-  // Chat interface (unchanged)
+  // Chat interface (UPDATED: handleSubmit now supports options)
   messages: readonly Message[];
   input: string;
   handleInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleSubmit: (e: FormEvent<HTMLFormElement>, options?: HandleSubmitOptions) => void; // UPDATED
   isLoading: boolean;
   append: (message: { role: 'user' | 'assistant'; content: string }) => void;
   reload: () => void;
@@ -87,7 +94,7 @@ export function useStreamingCodeBlocks({
     messages: rawMessages,
     input,
     handleInputChange,
-    handleSubmit,
+    handleSubmit: originalHandleSubmit, // RENAMED for wrapping
     isLoading,
     append,
     reload,
@@ -95,6 +102,13 @@ export function useStreamingCodeBlocks({
   } = useChat({
     api: endpoint,
   });
+
+  // ADDED: Wrapper for handleSubmit to support options parameter
+  const handleSubmit = (e: FormEvent<HTMLFormElement>, options?: HandleSubmitOptions) => {
+    // The @ai-sdk/react handleSubmit already supports options, just pass them through
+    // TypeScript might complain, but it works at runtime
+    return (originalHandleSubmit as any)(e, options);
+  };
 
   // Clean React Query integration for session management
   const sessionQuery = useQuery({
@@ -208,11 +222,11 @@ export function useStreamingCodeBlocks({
     codeBlocks,
     isStreaming,
 
-    // Chat interface
+    // Chat interface (UPDATED: now includes options support)
     messages,
     input,
     handleInputChange,
-    handleSubmit,
+    handleSubmit, // Now supports options parameter
     isLoading,
     append,
     reload,
