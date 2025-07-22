@@ -1,5 +1,5 @@
 {
-  "name": "@luckymonkybaby/streaming-code-blocks",
+  "name": "ai-code-blocks",
   "version": "2.0.0",
   "description": "Modern TypeScript library for parsing streaming code blocks from AI chat responses with automatic file generation and clean message display",
   "main": "dist/index.js",
@@ -27,15 +27,17 @@
     "openai"
   ],
   "author": {
-    "name": "LuckyMonkyBaby"
+    "name": "LuckyMonkyBaby (Lukas Andersson)",
+    "email": "lukas@ablo.finance",
+    "url": "https://ablo.framer.ai/"
   },
-  "homepage": "https://github.com/luckymonkybaby/streaming-code-blocks#readme",
+  "homepage": "https://github.com/luckymonkybaby/ai-code-blocks#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/luckymonkybaby/streaming-code-blocks.git"
+    "url": "https://github.com/luckymonkybaby/ai-code-blocks.git"
   },
   "bugs": {
-    "url": "https://github.com/luckymonkybaby/streaming-code-blocks/issues"
+    "url": "https://github.com/luckymonkybaby/ai-code-blocks/issues"
   },
   "license": "MIT",
   "engines": {

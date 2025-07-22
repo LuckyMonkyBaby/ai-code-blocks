@@ -1,9 +1,9 @@
-// examples/demo.tsx - Complete demo showing streaming-code-blocks v2.0 usage
-import React, { useState } from 'react';
+// examples/demo.tsx - Complete demo showing ai-code-blocks usage
+import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useStreamingCodeBlocks } from '@luckymonkybaby/streaming-code-blocks';
+import { useStreamingCodeBlocks } from 'ai-code-blocks';
 
-// Create a QueryClient instance (required for v2.0)
+// Create a QueryClient instance (required)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -27,7 +27,7 @@ const StreamingCodeBlocksDemo = () => {
     isStreaming,
     processMessage,
     clearAll,
-    // React Query states (always available in v2.0)
+    // React Query states (always available)
     isLoadingSession,
     isSavingSession,
     sessionError,
@@ -310,7 +310,7 @@ Perfect! I've created a comprehensive test suite for the Button component that c
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-2">Streaming Code Blocks v2.0</h1>
+        <h1 className="text-4xl font-bold mb-2">AI Code Blocks</h1>
         <p className="text-gray-600 text-lg">
           Parse AI assistant responses containing code blocks into files and clean messages
         </p>
@@ -489,7 +489,7 @@ Perfect! I've created a comprehensive test suite for the Button component that c
             <div>
               <h3 className="font-semibold mb-3">1. Install the package</h3>
               <pre className="text-sm bg-gray-800 text-green-400 p-3 rounded overflow-x-auto">
-                <code>npm install @luckymonkybaby/streaming-code-blocks</code>
+                <code>npm install ai-code-blocks</code>
               </pre>
             </div>
             <div>
@@ -504,7 +504,7 @@ Perfect! I've created a comprehensive test suite for the Button component that c
             <h3 className="font-semibold mb-3">3. Basic usage</h3>
             <pre className="text-sm bg-gray-800 text-green-400 p-4 rounded overflow-x-auto">
               <code>{`import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useStreamingCodeBlocks } from '@luckymonkybaby/streaming-code-blocks';
+import { useStreamingCodeBlocks } from 'ai-code-blocks';
 
 const queryClient = new QueryClient();
 

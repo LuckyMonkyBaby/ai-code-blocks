@@ -4,7 +4,6 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStreamingCodeBlocks } from '../use-streaming-code-blocks';
 import { MemoryStorageAdapter } from '../storage';
-import { FileState, CodeBlock } from '../types';
 
 // Mock the useChat hook from @ai-sdk/react
 jest.mock('@ai-sdk/react', () => ({

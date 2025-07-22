@@ -1,15 +1,15 @@
-# Streaming Code Blocks v2.0
+# AI Code Blocks
 
 TypeScript library for parsing streaming code blocks from AI chat responses, with automatic file generation and clean message display. Perfect for building AI coding assistants similar to Claude's artifacts system.
 
-## ✨ What's New in v2.0
+## ✨ Features
 
 - 🚀 **Always-on React Query**: Built-in caching and session persistence
 - ⚡ **Zustand State Management**: Efficient reactive updates
-- 🎯 **Simplified API**: Consistent naming and cleaner interfaces
+- 🎯 **Simplified API**: Consistent naming and clean interfaces
 - 📦 **Minimal Bundle**: Only Zustand as direct dependency (~2.9kb gzipped)
 - 🔒 **Strict TypeScript**: Compile-time validation with template literal types
-- 🧹 **Clean Architecture**: No backwards compatibility, fresh start
+- 🧹 **Clean Architecture**: Modern React patterns and best practices
 
 ## 🚀 Quick Start
 
@@ -17,7 +17,7 @@ TypeScript library for parsing streaming code blocks from AI chat responses, wit
 
 ```bash
 # Install the library
-npm install @luckymonkybaby/streaming-code-blocks
+npm install ai-code-blocks
 
 # Install peer dependencies (required)
 npm install @tanstack/react-query @ai-sdk/react
@@ -28,7 +28,7 @@ npm install @tanstack/react-query @ai-sdk/react
 ```tsx
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useStreamingCodeBlocks } from '@luckymonkybaby/streaming-code-blocks';
+import { useStreamingCodeBlocks } from 'ai-code-blocks';
 
 // Create QueryClient (required in v2.0)
 const queryClient = new QueryClient();
@@ -48,7 +48,7 @@ function CodeBlocksDemo() {
     codeBlocks,      // Parsed code blocks
     isStreaming,     // Streaming status (was: isCodeMode)
     
-    // React Query states (always available in v2.0)
+    // React Query states (always available)
     isLoadingSession,
     isSavingSession, 
     sessionError,
@@ -200,7 +200,7 @@ useStreamingCodeBlocks({
 ### Custom Storage
 
 ```tsx
-import { StorageAdapter } from '@luckymonkybaby/streaming-code-blocks';
+import { StorageAdapter } from 'ai-code-blocks';
 
 class DatabaseAdapter implements StorageAdapter {
   async saveSession(sessionId: string, data: any): Promise<void> {
@@ -249,7 +249,7 @@ Check out the [`examples/`](./examples/) directory for a complete interactive de
 
 To run the demo:
 1. Copy `examples/demo.tsx` to your React project
-2. Install dependencies: `npm install @luckymonkybaby/streaming-code-blocks @tanstack/react-query @ai-sdk/react`
+2. Install dependencies: `npm install ai-code-blocks @tanstack/react-query @ai-sdk/react`
 3. Import and use the component
 
 ## 🔧 API Reference
@@ -291,7 +291,7 @@ interface StreamingCodeBlocksResult {
   getFile: (path: string) => FileState | undefined;
   clearAll: () => void;
   
-  // React Query states (always present in v2.0)
+  // React Query states (always present)
   isLoadingSession: boolean;
   isSavingSession: boolean;
   sessionError: Error | null;
@@ -344,7 +344,7 @@ interface Config {
 
 ## 🚀 Migration from v1.x
 
-v2.0 is a **clean break release** with no backwards compatibility:
+This version is a **clean break release** with no backwards compatibility:
 
 ### API Changes
 - `apiEndpoint` → `endpoint`
@@ -361,7 +361,7 @@ v2.0 is a **clean break release** with no backwards compatibility:
 - Runtime schema validation removed
 
 ### Quick Migration
-1. Update package: `npm install @luckymonkybaby/streaming-code-blocks@2`
+1. Update package: `npm install ai-code-blocks`
 2. Install peer dependencies: `npm install @tanstack/react-query @ai-sdk/react`
 3. Wrap app with `QueryClientProvider`
 4. Update hook props to new API
@@ -369,7 +369,7 @@ v2.0 is a **clean break release** with no backwards compatibility:
 
 ## 📦 Bundle Size
 
-v2.0 is optimized for minimal bundle size:
+Optimized for minimal bundle size:
 - **Direct dependency**: Zustand only (~2.9kb gzipped)
 - **Peer dependencies**: React Query and @ai-sdk/react (likely already in your app)
 - **No runtime validation**: Zod removed, TypeScript compile-time only
@@ -389,5 +389,3 @@ Contributions are welcome! Please:
 MIT License - see [LICENSE](./LICENSE) for details.
 
 ---
-
-**Made with ❤️ for the AI coding assistant community**

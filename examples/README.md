@@ -1,6 +1,6 @@
 # Examples
 
-This directory contains examples demonstrating how to use the streaming-code-blocks library v2.0.
+This directory contains examples demonstrating how to use the ai-code-blocks library.
 
 ## Available Examples
 
@@ -16,13 +16,13 @@ To run this example:
 1. Copy the demo.tsx file to your React project
 2. Install the required dependencies:
    ```bash
-   npm install @luckymonkybaby/streaming-code-blocks @tanstack/react-query @ai-sdk/react
+   npm install ai-code-blocks @tanstack/react-query @ai-sdk/react
    ```
 3. Import and use the component in your app
 
 ## Key Features Demonstrated
 
-- **v2.0 API**: Uses the new consistent naming (`endpoint`, `sessionId`, `files`, `isStreaming`)
+- **Modern API**: Uses consistent naming (`endpoint`, `sessionId`, `files`, `isStreaming`)
 - **React Query Integration**: Always-on session persistence and caching
 - **Zustand State Management**: Efficient reactive state updates
 - **File Operations**: `<ablo-write>` and `<ablo-modify>` tag processing
@@ -34,7 +34,7 @@ To run this example:
 
 The examples show the typical usage pattern:
 
-1. **Setup QueryClient**: Required for v2.0
+1. **Setup QueryClient**: Required for the library
 2. **Initialize Hook**: Configure endpoint and callbacks
 3. **Process Messages**: Library automatically handles AI assistant responses
 4. **Render Results**: Display files and cleaned messages
