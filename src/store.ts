@@ -217,13 +217,9 @@ export const createStreamingStore = () =>
 
           const parsed = parser.parseMessage(content);
           
-          // If code has started but not ended, return empty string (incomplete code block)
-          if (parsed.hasCodeStarted && !parsed.hasCodeEnded) {
-            return "";
-          }
-          
-          // Return chat content if it exists, otherwise return original content
-          return parsed.chatContent || content;
+          // Always return the chat content (text before/after code blocks)
+          // This ensures text doesn't disappear during streaming
+          return parsed.chatContent;
         },
       }),
       {
