@@ -1,6 +1,6 @@
 {
   "name": "ai-code-blocks",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Modern TypeScript library for parsing streaming code blocks from AI chat responses with automatic file generation and clean message display",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
