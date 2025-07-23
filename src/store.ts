@@ -16,6 +16,9 @@ export interface StreamingStore {
   parser: StreamingParser | null;
   storage: StorageAdapter | null;
   sessionId: string | null;
+  
+  // Message content cache for progressive text building
+  messageContentCache: Map<string, string>;
 
   // Core actions
   initialize: (config: Config, storage: StorageAdapter, sessionId?: string) => void;
@@ -34,7 +37,7 @@ export interface StreamingStore {
   getSessionData: () => { files: Record<string, FileState>; codeBlocks: CodeBlock[]; isStreaming: boolean };
   
   // Utility methods
-  getCleanedMessage: (content: string) => string;
+  getCleanedMessage: (content: string, messageId?: string) => string;
 }
 
 export const createStreamingStore = () =>
@@ -49,6 +52,7 @@ export const createStreamingStore = () =>
         parser: null,
         storage: null,
         sessionId: null,
+        messageContentCache: new Map(),
 
         // Core actions
         initialize: (config: Config, storage: StorageAdapter, sessionId?: string) => {
@@ -60,6 +64,7 @@ export const createStreamingStore = () =>
             files: new Map(),
             codeBlocks: [],
             isStreaming: false,
+            messageContentCache: new Map(),
           });
         },
 
@@ -137,6 +142,7 @@ export const createStreamingStore = () =>
             files: new Map(),
             codeBlocks: [],
             isStreaming: false,
+            messageContentCache: new Map(),
           });
         },
 
@@ -179,6 +185,7 @@ export const createStreamingStore = () =>
                 files: new Map(Object.entries(data.files || {})),
                 codeBlocks: data.codeBlocks || [],
                 isStreaming: data.isStreaming || false,
+                messageContentCache: new Map(Object.entries(data.messageContentCache || {})),
               });
             }
           } catch (error) {
@@ -187,7 +194,7 @@ export const createStreamingStore = () =>
         },
 
         saveSession: async (sessionId: string) => {
-          const { storage, files, codeBlocks, isStreaming } = get();
+          const { storage, files, codeBlocks, isStreaming, messageContentCache } = get();
           if (!storage) return;
 
           try {
@@ -195,6 +202,7 @@ export const createStreamingStore = () =>
               files: Object.fromEntries(files),
               codeBlocks,
               isStreaming,
+              messageContentCache: Object.fromEntries(messageContentCache),
             });
           } catch (error) {
             console.warn('Failed to save session to storage:', error);
@@ -202,24 +210,48 @@ export const createStreamingStore = () =>
         },
 
         getSessionData: () => {
-          const { files, codeBlocks, isStreaming } = get();
+          const { files, codeBlocks, isStreaming, messageContentCache } = get();
           return {
             files: Object.fromEntries(files),
             codeBlocks: [...codeBlocks],
             isStreaming,
+            messageContentCache: Object.fromEntries(messageContentCache),
           };
         },
 
         // Utility methods
-        getCleanedMessage: (content: string) => {
-          const { parser } = get();
+        getCleanedMessage: (content: string, messageId?: string) => {
+          const { parser, messageContentCache } = get();
           if (!parser) return content;
 
           const parsed = parser.parseMessage(content);
           
-          // Always return the chat content (text before/after code blocks)
-          // This ensures text doesn't disappear during streaming
-          return parsed.chatContent;
+          // Progressive text building to prevent text disappearing during streaming
+          if (messageId) {
+            const cached = messageContentCache.get(messageId);
+            
+            if (parsed.hasCodeStarted && !parsed.hasCodeEnded) {
+              // During code streaming: return cached content if available, otherwise text before code
+              const currentText = parsed.chatContent || "";
+              if (cached && cached.length > currentText.length) {
+                // Keep longer cached version during streaming
+                return cached;
+              } else if (currentText) {
+                // Cache the current text before code
+                messageContentCache.set(messageId, currentText);
+                return currentText;
+              }
+              return cached || content; // Fallback to original content
+            } else {
+              // Code hasn't started or has ended: update cache with latest complete content
+              const finalText = parsed.chatContent || content;
+              messageContentCache.set(messageId, finalText);
+              return finalText;
+            }
+          }
+          
+          // Fallback for messages without ID
+          return parsed.chatContent || content;
         },
       }),
       {

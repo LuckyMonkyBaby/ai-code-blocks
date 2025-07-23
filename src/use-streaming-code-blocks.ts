@@ -221,7 +221,7 @@ export function useStreamingCodeBlocks({
       id: msg.id,
       role: msg.role as 'user' | 'assistant',
       content: msg.role === "assistant" 
-        ? store.getState().getCleanedMessage(msg.content)
+        ? store.getState().getCleanedMessage(msg.content, msg.id)
         : msg.content,
     }));
 
