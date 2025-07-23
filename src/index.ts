@@ -3,8 +3,15 @@ export { useStreamingCodeBlocks } from "./use-streaming-code-blocks";
 export type { UseStreamingCodeBlocksProps, StreamingCodeBlocksResult } from "./use-streaming-code-blocks";
 
 export { StreamingParser } from "./parser";
-export { MemoryStorageAdapter } from "./storage";
+export { MemoryStorageAdapter, LocalStorageAdapter } from "./storage";
 export type { StorageAdapter } from "./storage";
+
+// Optional React Query integration (requires @tanstack/react-query peer dependency)
+export { useStreamingCodeBlocksWithReactQuery } from "./use-streaming-code-blocks-react-query";
+export type { 
+  UseStreamingCodeBlocksWithReactQueryProps, 
+  StreamingCodeBlocksWithReactQueryResult 
+} from "./use-streaming-code-blocks-react-query";
 
 // Zustand store
 export { createStreamingStore } from "./store";

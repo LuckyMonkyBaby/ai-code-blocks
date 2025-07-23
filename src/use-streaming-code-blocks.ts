@@ -1,30 +1,10 @@
-// src/use-streaming-code-blocks.ts - v2.0.2 with better error handling
-import { useEffect, useRef, ChangeEvent, FormEvent } from "react";
+// src/use-streaming-code-blocks.ts - v2.0.3 self-contained (no React Query)
+import { useEffect, useRef, useState, useCallback, ChangeEvent, FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
-import { useQuery, useMutation, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { Config, ConfigInput, FileState, CodeBlock, Message, DEFAULT_CONFIG } from "./types";
-import { StorageAdapter, MemoryStorageAdapter } from "./storage";
+import { StorageAdapter, LocalStorageAdapter } from "./storage";
 import { createStreamingStore, StreamingStoreApi } from "./store";
 
-// Check if we're in a QueryClientProvider context
-function useQueryClientCheck() {
-  try {
-    return useQueryClient();
-  } catch (error) {
-    throw new Error(
-      'ai-code-blocks: No QueryClient found. Please wrap your app with QueryClientProvider:\n\n' +
-      'import { QueryClient, QueryClientProvider } from "@tanstack/react-query";\n\n' +
-      'const queryClient = new QueryClient();\n\n' +
-      'function App() {\n' +
-      '  return (\n' +
-      '    <QueryClientProvider client={queryClient}>\n' +
-      '      <YourComponents />\n' +
-      '    </QueryClientProvider>\n' +
-      '  );\n' +
-      '}'
-    );
-  }
-}
 
 // v2.0 API with consistent naming
 export interface UseStreamingCodeBlocksProps {
@@ -65,7 +45,7 @@ export interface StreamingCodeBlocksResult {
   getFile: (path: string) => FileState | undefined;
   clearAll: () => void;
   
-  // React Query states (always present in v2.0)
+  // Session management states (self-contained in v2.0.3)
   isLoadingSession: boolean;
   isSavingSession: boolean;
   sessionError: Error | null;
@@ -76,16 +56,18 @@ export function useStreamingCodeBlocks({
   endpoint,
   sessionId,
   config = {},
-  storage = new MemoryStorageAdapter(),
+  storage = new LocalStorageAdapter(),
   persistSession = false,
   onFileChanged,
   onCodeBlockComplete,
 }: UseStreamingCodeBlocksProps): StreamingCodeBlocksResult {
-  // Check for QueryClient early with helpful error
-  const queryClient = useQueryClientCheck();
-  
   // Create final config by merging with defaults
   const finalConfig: Config = { ...DEFAULT_CONFIG, ...config };
+  
+  // Session management state
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [isSavingSession, setIsSavingSession] = useState(false);
+  const [sessionError, setSessionError] = useState<Error | null>(null);
   
   // Stable callback references to prevent stale closures
   const onFileChangedRef = useRef(onFileChanged);
@@ -130,36 +112,44 @@ export function useStreamingCodeBlocks({
     return (originalHandleSubmit as any)(e, options);
   };
 
-  // Clean React Query integration for session management
-  const sessionQuery = useQuery({
-    queryKey: ['streaming-session', sessionId],
-    queryFn: async () => {
-      if (!sessionId || !persistSession) return null;
+  // Session loading function
+  const loadSession = useCallback(async () => {
+    if (!sessionId || !persistSession) return;
+    
+    setIsLoadingSession(true);
+    setSessionError(null);
+    
+    try {
       await store.getState().loadSession(sessionId);
-      return store.getState().getSessionData();
-    },
-    enabled: !!(sessionId && persistSession),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,   // 10 minutes
-  });
-
-  const saveSessionMutation = useMutation({
-    mutationFn: async (data: { sessionId: string; sessionData: any }) => {
-      await store.getState().saveSession(data.sessionId);
-      return data.sessionData;
-    },
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(['streaming-session', variables.sessionId], data);
-    },
-  });
+    } catch (error) {
+      setSessionError(error as Error);
+    } finally {
+      setIsLoadingSession(false);
+    }
+  }, [sessionId, persistSession, store]);
+  
+  // Session saving function
+  const saveSession = useCallback(async () => {
+    if (!sessionId || !persistSession) return;
+    
+    setIsSavingSession(true);
+    setSessionError(null);
+    
+    try {
+      await store.getState().saveSession(sessionId);
+    } catch (error) {
+      setSessionError(error as Error);
+    } finally {
+      setIsSavingSession(false);
+    }
+  }, [sessionId, persistSession, store]);
 
   // Load existing session on mount
   useEffect(() => {
     if (persistSession && sessionId) {
-      // Let React Query handle the loading
-      sessionQuery.refetch();
+      loadSession();
     }
-  }, [sessionId, persistSession]);
+  }, [loadSession]);
 
   // Process messages and track changes
   useEffect(() => {
@@ -211,8 +201,7 @@ export function useStreamingCodeBlocks({
         }
         
         saveTimer = setTimeout(() => {
-          const sessionData = store.getState().getSessionData();
-          saveSessionMutation.mutate({ sessionId, sessionData });
+          saveSession();
         }, 1000);
       }
     });
@@ -223,7 +212,7 @@ export function useStreamingCodeBlocks({
         clearTimeout(saveTimer);
       }
     };
-  }, [sessionId, persistSession, saveSessionMutation, store]);
+  }, [sessionId, persistSession, saveSession, store]);
 
   // Clean messages for chat display (filter to only user/assistant)
   const messages = rawMessages
@@ -256,10 +245,10 @@ export function useStreamingCodeBlocks({
     getFile: (path: string) => store.getState().getFile(path),
     clearAll: () => store.getState().clear(),
 
-    // React Query states (always present in v2.0)
-    isLoadingSession: sessionQuery.isLoading,
-    isSavingSession: saveSessionMutation.isPending,
-    sessionError: (sessionQuery.error || saveSessionMutation.error) as Error | null,
-    refetchSession: () => sessionQuery.refetch(),
+    // Session management states (self-contained in v2.0.3)
+    isLoadingSession,
+    isSavingSession,
+    sessionError,
+    refetchSession: loadSession,
   };
 }

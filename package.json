@@ -19,7 +19,6 @@
     "typescript",
     "react",
     "zustand",
-    "react-query",
     "artifacts",
     "code-generation",
     "assistant",
@@ -61,13 +60,9 @@
   },
   "peerDependencies": {
     "react": ">=18.0.0",
-    "@ai-sdk/react": ">=0.0.5",
-    "@tanstack/react-query": ">=5.0.0"
+    "@ai-sdk/react": ">=0.0.5"
   },
   "peerDependenciesMeta": {
-    "@tanstack/react-query": {
-      "optional": false
-    },
     "@ai-sdk/react": {
       "optional": false
     }

@@ -1,7 +1,5 @@
 // src/__tests__/use-streaming-code-blocks.test.tsx
-import React from 'react';
 import { renderHook, act } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStreamingCodeBlocks } from '../use-streaming-code-blocks';
 import { MemoryStorageAdapter } from '../storage';
 
@@ -23,30 +21,15 @@ import { useChat } from '@ai-sdk/react';
 
 describe('useStreamingCodeBlocks', () => {
   const mockUseChat = useChat as jest.MockedFunction<typeof useChat>;
-  let queryClient: QueryClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    });
+    // Clear localStorage to ensure clean test state
+    localStorage.clear();
   });
 
-  const renderHookWithQueryClient = (callback: () => any) => {
-    return renderHook(callback, {
-      wrapper: ({ children }) => React.createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        children
-      ),
-    });
-  };
-
   it('should initialize with empty state', () => {
-    const { result } = renderHookWithQueryClient(() =>
+    const { result } = renderHook(() =>
       useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
@@ -88,7 +71,7 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHookWithQueryClient(() =>
+    const { result } = renderHook(() =>
       useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
@@ -128,7 +111,7 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHookWithQueryClient(() =>
+    const { result } = renderHook(() =>
       useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
@@ -160,7 +143,7 @@ Done!`,
       addToolResult: jest.fn(),
     }));
 
-    const { rerender } = renderHookWithQueryClient(() =>
+    const { rerender } = renderHook(() =>
       useStreamingCodeBlocks({
         endpoint: '/api/chat',
         onFileChanged,
@@ -234,7 +217,7 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    renderHookWithQueryClient(() =>
+    renderHook(() =>
       useStreamingCodeBlocks({
         endpoint: '/api/chat',
         onCodeBlockComplete,
@@ -281,7 +264,7 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHookWithQueryClient(() =>
+    const { result } = renderHook(() =>
       useStreamingCodeBlocks({
         endpoint: '/api/chat',
         config: {
@@ -301,7 +284,7 @@ Done!`,
   });
 
   it('should handle clearAll', () => {
-    const { result } = renderHookWithQueryClient(() =>
+    const { result } = renderHook(() =>
       useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
@@ -334,7 +317,7 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHookWithQueryClient(() =>
+    const { result } = renderHook(() =>
       useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
@@ -374,7 +357,7 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    renderHookWithQueryClient(() =>
+    renderHook(() =>
       useStreamingCodeBlocks({
         endpoint: '/api/chat',
         storage,
@@ -402,7 +385,7 @@ Done!`,
     await storage.saveSession('thread-123', sessionData);
     const loadSpy = jest.spyOn(storage, 'loadSession');
 
-    renderHookWithQueryClient(() =>
+    renderHook(() =>
       useStreamingCodeBlocks({
         endpoint: '/api/chat',
         storage,
@@ -438,7 +421,7 @@ Done!`,
       addToolResult: jest.fn(),
     });
 
-    const { result } = renderHookWithQueryClient(() =>
+    const { result } = renderHook(() =>
       useStreamingCodeBlocks({ endpoint: '/api/chat' })
     );
 
