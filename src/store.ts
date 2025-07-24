@@ -5,6 +5,13 @@ import { Config, CodeBlock, FileState, FileCommand, DEFAULT_CONFIG } from './typ
 import { StreamingParser } from './parser';
 import { StorageAdapter } from './storage';
 
+// Progressive content builder for handling streaming partial tags
+interface MessageContentState {
+  stableContent: string;      // Content that won't change
+  lastProcessedLength: number; // Track processing progress
+  isStreamingCode: boolean;   // Current streaming state
+}
+
 export interface StreamingStore {
   // State
   files: ReadonlyMap<string, FileState>;
@@ -18,7 +25,7 @@ export interface StreamingStore {
   sessionId: string | null;
   
   // Message content cache for progressive text building
-  messageContentCache: Map<string, string>;
+  messageContentCache: Map<string, MessageContentState>;
 
   // Core actions
   initialize: (config: Config, storage: StorageAdapter, sessionId?: string) => void;
@@ -68,6 +75,7 @@ export const createStreamingStore = () =>
           });
         },
 
+        // Enhanced message processing with proper state management
         processMessage: async (messageId: string, content: string) => {
           const { parser, storage, sessionId } = get();
           if (!parser) return;
@@ -219,39 +227,63 @@ export const createStreamingStore = () =>
           };
         },
 
-        // Utility methods
+        // Enhanced getCleanedMessage with industry-standard buffer management
         getCleanedMessage: (content: string, messageId?: string) => {
           const { parser, messageContentCache } = get();
           if (!parser) return content;
 
+          // Get or create message state for progressive building
+          const messageKey = messageId || 'default';
+          let messageState = messageContentCache.get(messageKey) as MessageContentState;
+          
+          if (!messageState) {
+            messageState = {
+              stableContent: '',
+              lastProcessedLength: 0,
+              isStreamingCode: false
+            };
+          }
+
+          // Only process new content (performance optimization)
+          if (content.length <= messageState.lastProcessedLength && messageState.isStreamingCode) {
+            // No new content during streaming - return stable content
+            return messageState.stableContent;
+          }
+
           const parsed = parser.parseMessage(content);
           
-          // Progressive text building to prevent text disappearing during streaming
-          if (messageId) {
-            const cached = messageContentCache.get(messageId);
-            
-            if (parsed.hasCodeStarted && !parsed.hasCodeEnded) {
-              // During code streaming: return cached content if available, otherwise text before code
-              const currentText = parsed.chatContent || "";
-              if (cached && cached.length > currentText.length) {
-                // Keep longer cached version during streaming
-                return cached;
-              } else if (currentText) {
-                // Cache the current text before code
-                messageContentCache.set(messageId, currentText);
-                return currentText;
-              }
-              return cached || content; // Fallback to original content
-            } else {
-              // Code hasn't started or has ended: update cache with latest complete content
-              const finalText = parsed.chatContent || content;
-              messageContentCache.set(messageId, finalText);
-              return finalText;
-            }
-          }
+          // Update processing state
+          messageState.lastProcessedLength = content.length;
+          messageState.isStreamingCode = parsed.hasCodeStarted && !parsed.hasCodeEnded;
           
-          // Fallback for messages without ID
-          return parsed.chatContent || content;
+          if (parsed.hasCodeStarted && !parsed.hasCodeEnded) {
+            // CRITICAL: During code streaming, only update if we have new stable content
+            if (parsed.chatContent && parsed.chatContent.length > messageState.stableContent.length) {
+              messageState.stableContent = parsed.chatContent;
+            }
+            
+            // Cache updated state
+            messageContentCache.set(messageKey, messageState);
+            
+            // Return stable content (never return partial tags)
+            return messageState.stableContent;
+            
+          } else if (parsed.hasCodeStarted && parsed.hasCodeEnded) {
+            // Code streaming complete - update with final content
+            messageState.stableContent = parsed.chatContent || content;
+            messageState.isStreamingCode = false;
+            messageContentCache.set(messageKey, messageState);
+            
+            return messageState.stableContent;
+            
+          } else {
+            // No code detected - normal content
+            messageState.stableContent = content;
+            messageState.isStreamingCode = false;
+            messageContentCache.set(messageKey, messageState);
+            
+            return content;
+          }
         },
       }),
       {
