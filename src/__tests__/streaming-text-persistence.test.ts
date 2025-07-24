@@ -51,7 +51,7 @@ describe('Streaming Text Persistence', () => {
   it('should handle empty chat content gracefully', () => {
     const messageId = 'msg-3';
     
-    // Code block without any preceding text
+    // Code block without any preceding text - should return original content as fallback
     const content = '<ablo-code><ablo-write file_path="test.ts">content</ablo-write>';
     const result = store.getState().getCleanedMessage(content, messageId);
     // Should return original content as fallback when no chat content exists
